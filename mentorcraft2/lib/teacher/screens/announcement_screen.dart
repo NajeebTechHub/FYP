@@ -4,7 +4,6 @@ import 'package:mentorcraft2/teacher/provider/teacher_provider.dart';
 import 'package:mentorcraft2/teacher/models/teacher_announcement.dart';
 import '../../../theme/color.dart';
 import 'package:mentorcraft2/teacher/widgets/announcement_card.dart';
-import 'package:mentorcraft2/teacher/screens/announcement_screen.dart';
 
 import 'create_announcement_screen.dart';
 
@@ -24,7 +23,6 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: Colors.white,
         foregroundColor: AppColors.primary,
         actions: [
           IconButton(

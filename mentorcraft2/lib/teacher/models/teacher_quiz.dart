@@ -5,13 +5,14 @@ class TeacherQuiz {
   final String courseId;
   final String courseName;
   final List<QuizQuestion> questions;
-  final int timeLimit; // in minutes
+  final int timeLimit;
   final int attempts;
   final double passingScore;
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool isActive;
   final int totalSubmissions;
+  final String teacherId;
 
   TeacherQuiz({
     required this.id,
@@ -27,6 +28,7 @@ class TeacherQuiz {
     required this.updatedAt,
     required this.isActive,
     required this.totalSubmissions,
+    required this.teacherId,
   });
 
   factory TeacherQuiz.fromJson(Map<String, dynamic> json) {
@@ -36,7 +38,10 @@ class TeacherQuiz {
       description: json['description'] ?? '',
       courseId: json['courseId'] ?? '',
       courseName: json['courseName'] ?? '',
-      questions: (json['questions'] as List?)?.map((q) => QuizQuestion.fromJson(q)).toList() ?? [],
+      questions: (json['questions'] as List<dynamic>?)
+          ?.map((q) => QuizQuestion.fromJson(q))
+          .toList() ??
+          [],
       timeLimit: json['timeLimit'] ?? 60,
       attempts: json['attempts'] ?? 3,
       passingScore: (json['passingScore'] ?? 70.0).toDouble(),
@@ -44,6 +49,7 @@ class TeacherQuiz {
       updatedAt: DateTime.parse(json['updatedAt'] ?? DateTime.now().toIso8601String()),
       isActive: json['isActive'] ?? true,
       totalSubmissions: json['totalSubmissions'] ?? 0,
+      teacherId: json['teacherId'] ?? '', // ✅ FIXED
     );
   }
 
@@ -62,6 +68,7 @@ class TeacherQuiz {
       'updatedAt': updatedAt.toIso8601String(),
       'isActive': isActive,
       'totalSubmissions': totalSubmissions,
+      'teacherId': teacherId, // ✅ FIXED
     };
   }
 }
@@ -70,7 +77,7 @@ class QuizQuestion {
   final String id;
   final String question;
   final List<String> options;
-  final int correctAnswer; // index of correct answer
+  final int correctAnswer;
   final String explanation;
   final int points;
 
@@ -116,7 +123,7 @@ class QuizSubmission {
   final double score;
   final double percentage;
   final DateTime submittedAt;
-  final int timeSpent; // in minutes
+  final int timeSpent;
   final bool passed;
 
   QuizSubmission({
@@ -140,7 +147,10 @@ class QuizSubmission {
       studentId: json['studentId'] ?? '',
       studentName: json['studentName'] ?? '',
       studentEmail: json['studentEmail'] ?? '',
-      answers: (json['answers'] as List?)?.map((a) => StudentAnswer.fromJson(a)).toList() ?? [],
+      answers: (json['answers'] as List<dynamic>?)
+          ?.map((a) => StudentAnswer.fromJson(a))
+          .toList() ??
+          [],
       score: (json['score'] ?? 0.0).toDouble(),
       percentage: (json['percentage'] ?? 0.0).toDouble(),
       submittedAt: DateTime.parse(json['submittedAt'] ?? DateTime.now().toIso8601String()),

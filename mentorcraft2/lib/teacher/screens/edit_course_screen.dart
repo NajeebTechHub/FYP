@@ -46,7 +46,6 @@ class _EditCourseScreenState extends State<EditCourseScreen> {
     _durationController = TextEditingController(text: widget.course.duration);
     _selectedCategory = widget.course.category;
     _selectedLevel = widget.course.level;
-    _tags = List.from(widget.course.tags);
   }
 
   @override
@@ -193,7 +192,6 @@ class _EditCourseScreenState extends State<EditCourseScreen> {
         enrolledStudents: widget.course.enrolledStudents,
         rating: widget.course.rating,
         totalRatings: widget.course.totalRatings,
-        tags: _tags,
         modules: widget.course.modules,
       );
 

@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:mentorcraft2/teacher/screens/settings_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:mentorcraft2/teacher/provider/teacher_provider.dart';
-import 'package:mentorcraft2/core/provider/auth_provider.dart';
 import '../../theme/color.dart';
 import 'teacher_dashboard.dart';
 import 'course_management_screen.dart';
 import 'quiz_management_screen.dart';
 import 'student_progress_screen.dart';
 import 'package:mentorcraft2/teacher/screens/announcement_screen.dart';
-import '../widgets/teacher_drawer.dart';
 
 class TeacherMainScreen extends StatefulWidget {
   final int initialIndex;
@@ -85,6 +84,14 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> with SingleTicker
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           title: Text(_screenTitles[_selectedIndex]),
+          centerTitle: true,
+          actions: [
+            IconButton(onPressed: (){
+              Navigator.of(context).push(MaterialPageRoute(builder: (context){
+                return SettingsScreen();
+              }));
+            }, icon: Icon(Icons.settings))
+          ],
         ),
         body: _screens[_selectedIndex],
         // drawer: const TeacherDrawer(),

@@ -35,7 +35,6 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create Announcement'),
-        backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 0,
       ),

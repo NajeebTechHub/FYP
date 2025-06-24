@@ -1,18 +1,34 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../services/course_service.dart';
+import '../../services/quize_service.dart';
 import '../models/teacher_course.dart';
 import '../models/teacher_quiz.dart';
 import '../models/student_progress.dart';
 import '../models/teacher_announcement.dart';
 
 class TeacherProvider with ChangeNotifier {
-  // Teacher profile
+  final CourseService _courseService = CourseService();
+  final QuizService _quizService = QuizService();
+  StreamSubscription<List<TeacherCourse>>? _courseSubscription;
+
+  // constructor to auto-fetch courses
+  TeacherProvider() {
+    fetchCourses(_teacherId);
+  }
+
+  // State
+  bool _isQuizLoading = false;
+  bool get isQuizLoading => _isQuizLoading;
+
+  // Teacher Info
   String _teacherId = 'teacher_001';
   String _teacherName = 'Dr. Sarah Johnson';
   String _teacherEmail = 'sarah.johnson@mentorcraft.com';
   String _teacherAvatar = 'assets/images/11.png';
   String _teacherBio = 'Experienced educator and technology expert with 10+ years in the field.';
 
-  // Dashboard stats
+  // Dashboard Stats
   DashboardStats _dashboardStats = DashboardStats(
     totalCourses: 12,
     publishedCourses: 10,
@@ -38,131 +54,11 @@ class TeacherProvider with ChangeNotifier {
     ],
   );
 
-  // Courses
-  List<TeacherCourse> _courses = [
-    TeacherCourse(
-      id: '1',
-      title: 'Complete Flutter Development',
-      description: 'Master Flutter app development from basics to advanced concepts',
-      category: 'Mobile Development',
-      level: 'Intermediate',
-      price: 99.99,
-      duration: '12 hours',
-      imageUrl: 'assets/flutter_course.jpg',
-      teacherId: 'teacher_001',
-      teacherName: 'Dr. Sarah Johnson',
-      createdAt: DateTime.now().subtract(const Duration(days: 30)),
-      updatedAt: DateTime.now().subtract(const Duration(days: 5)),
-      isPublished: true,
-      enrolledStudents: 245,
-      rating: 4.8,
-      totalRatings: 89,
-      tags: ['Flutter', 'Dart', 'Mobile', 'Cross-platform'],
-      modules: [
-        CourseModule(
-          id: 'mod1',
-          title: 'Introduction to Flutter',
-          description: 'Getting started with Flutter development',
-          order: 1,
-          lessons: [
-            Lesson(id: 'l1', title: 'What is Flutter?', content: 'Introduction to Flutter framework', type: 'video', videoUrl: '', duration: 15, order: 1),
-            Lesson(id: 'l2', title: 'Setting up Development Environment', content: 'Install Flutter SDK and IDE', type: 'video', videoUrl: '', duration: 20, order: 2),
-          ],
-        ),
-      ],
-    ),
-    TeacherCourse(
-      id: '2',
-      title: 'React Native Fundamentals',
-      description: 'Build cross-platform mobile apps with React Native',
-      category: 'Mobile Development',
-      level: 'Beginner',
-      price: 79.99,
-      duration: '8 hours',
-      imageUrl: 'assets/react_course.jpg',
-      teacherId: 'teacher_001',
-      teacherName: 'Dr. Sarah Johnson',
-      createdAt: DateTime.now().subtract(const Duration(days: 45)),
-      updatedAt: DateTime.now().subtract(const Duration(days: 10)),
-      isPublished: true,
-      enrolledStudents: 189,
-      rating: 4.6,
-      totalRatings: 67,
-      tags: ['React Native', 'JavaScript', 'Mobile'],
-      modules: [],
-    ),
-  ];
-
-  // Quizzes
-  List<TeacherQuiz> _quizzes = [
-    TeacherQuiz(
-      id: 'quiz1',
-      title: 'Flutter Basics Quiz',
-      description: 'Test your knowledge of Flutter fundamentals',
-      courseId: '1',
-      courseName: 'Complete Flutter Development',
-      questions: [
-        QuizQuestion(
-          id: 'q1',
-          question: 'What is Flutter?',
-          options: ['A web framework', 'A mobile UI framework', 'A database', 'An IDE'],
-          correctAnswer: 1,
-          explanation: 'Flutter is Google\'s UI toolkit for building natively compiled applications',
-          points: 2,
-        ),
-      ],
-      timeLimit: 30,
-      attempts: 3,
-      passingScore: 70.0,
-      createdAt: DateTime.now().subtract(const Duration(days: 20)),
-      updatedAt: DateTime.now().subtract(const Duration(days: 15)),
-      isActive: true,
-      totalSubmissions: 156,
-    ),
-  ];
-
-  // Student progress
-  List<StudentProgress> _studentProgress = [
-    StudentProgress(
-      id: 'sp1',
-      studentId: 'student_001',
-      studentName: 'John Doe',
-      studentEmail: 'john.doe@email.com',
-      studentAvatar: 'assets/student1.jpg',
-      courseId: '1',
-      courseName: 'Complete Flutter Development',
-      progressPercentage: 65.5,
-      enrolledAt: DateTime.now().subtract(const Duration(days: 15)),
-      lastAccessedAt: DateTime.now().subtract(const Duration(hours: 2)),
-      totalLessons: 24,
-      completedLessons: 16,
-      lessonProgress: [],
-      quizAttempts: [],
-      overallGrade: 78.5,
-      status: 'in_progress',
-      timeSpent: 480,
-    ),
-  ];
-
-  // Announcements
-  List<TeacherAnnouncement> _announcements = [
-    TeacherAnnouncement(
-      id: 'ann1',
-      title: 'New Assignment Available',
-      content: 'Please complete the Flutter project assignment by next Friday.',
-      courseId: '1',
-      courseName: 'Complete Flutter Development',
-      teacherId: 'teacher_001',
-      teacherName: 'Dr. Sarah Johnson',
-      createdAt: DateTime.now().subtract(const Duration(hours: 3)),
-      updatedAt: DateTime.now().subtract(const Duration(hours: 3)),
-      isUrgent: false,
-      isPublished: true,
-      targetStudents: [],
-      readCount: 89,
-      type: 'assignment',
-    ),
-  ];
+  // Data Lists
+  List<TeacherCourse> _courses = [];
+  List<TeacherQuiz> _quizzes = [];
+  List<StudentProgress> _studentProgress = [];
+  List<TeacherAnnouncement> _announcements = [];
 
   // Getters
   String get teacherId => _teacherId;
@@ -176,57 +72,59 @@ class TeacherProvider with ChangeNotifier {
   List<StudentProgress> get studentProgress => _studentProgress;
   List<TeacherAnnouncement> get announcements => _announcements;
 
-  // Course methods
-  void addCourse(TeacherCourse course) {
-    _courses.add(course);
+  // Course Methods
+  Future<void> fetchCourses([String? teacherId]) async {
+    _courses = await _courseService.getCoursesByTeacher(teacherId ?? _teacherId);
     notifyListeners();
   }
 
-  void updateCourse(TeacherCourse course) {
-    final index = _courses.indexWhere((c) => c.id == course.id);
-    if (index != -1) {
-      _courses[index] = course;
+  void subscribeToCourses(String teacherId) {
+    _courseSubscription?.cancel();
+    _courseSubscription = _courseService.listenToCoursesByTeacher(teacherId).listen((updatedCourses) {
+      _courses = updatedCourses;
+      notifyListeners();
+    });
+  }
+
+  Future<void> addCourse(TeacherCourse course) async {
+    await _courseService.addCourse(course);
+  }
+
+  Future<void> updateCourse(TeacherCourse course) async {
+    await _courseService.updateCourse(course);
+  }
+
+  Future<void> deleteCourse(String courseId) async {
+    await _courseService.deleteCourse(courseId);
+  }
+
+  Future<void> toggleCoursePublished(String courseId, bool publish) async {
+    await _courseService.toggleCoursePublished(courseId, publish);
+  }
+
+
+  // Quiz Methods
+  Future<void> fetchQuizzes() async {
+    _isQuizLoading = true;
+    notifyListeners();
+    try {
+      _quizzes = await _quizService.getQuizzesByTeacher(_teacherId);
+    } catch (e) {
+      debugPrint("Failed to fetch quizzes: $e");
+    } finally {
+      _isQuizLoading = false;
       notifyListeners();
     }
   }
 
-  void deleteCourse(String courseId) {
-    _courses.removeWhere((c) => c.id == courseId);
-    notifyListeners();
-  }
-
-  void toggleCoursePublished(String courseId) {
-    final index = _courses.indexWhere((c) => c.id == courseId);
-    if (index != -1) {
-      final course = _courses[index];
-      _courses[index] = TeacherCourse(
-        id: course.id,
-        title: course.title,
-        description: course.description,
-        category: course.category,
-        level: course.level,
-        price: course.price,
-        duration: course.duration,
-        imageUrl: course.imageUrl,
-        teacherId: course.teacherId,
-        teacherName: course.teacherName,
-        createdAt: course.createdAt,
-        updatedAt: DateTime.now(),
-        isPublished: !course.isPublished,
-        enrolledStudents: course.enrolledStudents,
-        rating: course.rating,
-        totalRatings: course.totalRatings,
-        tags: course.tags,
-        modules: course.modules,
-      );
+  Future<void> addQuiz(TeacherQuiz quiz) async {
+    try {
+      await _quizService.addQuiz(quiz);
+      _quizzes.add(quiz);
       notifyListeners();
+    } catch (e) {
+      debugPrint("Error adding quiz: $e");
     }
-  }
-
-  // Quiz methods
-  void addQuiz(TeacherQuiz quiz) {
-    _quizzes.add(quiz);
-    notifyListeners();
   }
 
   void updateQuiz(TeacherQuiz quiz) {
@@ -242,7 +140,7 @@ class TeacherProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Announcement methods
+  // Announcement Methods
   void addAnnouncement(TeacherAnnouncement announcement) {
     _announcements.insert(0, announcement);
     notifyListeners();
@@ -261,7 +159,7 @@ class TeacherProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Filter methods
+  // Filters
   List<TeacherCourse> getCoursesByStatus(String status) {
     switch (status.toLowerCase()) {
       case 'published':
@@ -279,5 +177,12 @@ class TeacherProvider with ChangeNotifier {
 
   List<TeacherQuiz> getQuizzesByCourse(String courseId) {
     return _quizzes.where((q) => q.courseId == courseId).toList();
+  }
+
+  // Cleanup
+  @override
+  void dispose() {
+    _courseSubscription?.cancel();
+    super.dispose();
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/teacher_quiz.dart';
 import '../../theme/color.dart';
 
@@ -38,7 +39,6 @@ class QuizCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Row(
               children: [
                 Container(
@@ -47,11 +47,7 @@ class QuizCard extends StatelessWidget {
                     color: Colors.blue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
-                    Icons.quiz,
-                    color: Colors.blue,
-                    size: 20,
-                  ),
+                  child: const Icon(Icons.quiz, color: Colors.blue, size: 20),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -93,24 +89,15 @@ class QuizCard extends StatelessWidget {
                 ),
               ],
             ),
-
             const SizedBox(height: 12),
-
-            // Description
             if (quiz.description.isNotEmpty)
               Text(
                 quiz.description,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-
             const SizedBox(height: 12),
-
-            // Quiz Details
             Wrap(
               spacing: 16,
               runSpacing: 8,
@@ -121,10 +108,7 @@ class QuizCard extends StatelessWidget {
                 _buildDetailItem(Icons.grade, '${quiz.passingScore.toInt()}% to pass'),
               ],
             ),
-
             const SizedBox(height: 12),
-
-            // Submissions
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -133,35 +117,21 @@ class QuizCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.assignment_turned_in,
-                    size: 20,
-                    color: Colors.grey[600],
-                  ),
+                  Icon(Icons.assignment_turned_in, size: 20, color: Colors.grey[600]),
                   const SizedBox(width: 8),
                   Text(
                     '${quiz.totalSubmissions} submissions',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[700],
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[700], fontWeight: FontWeight.w500),
                   ),
                   const Spacer(),
                   Text(
                     'Created ${_formatDate(quiz.createdAt)}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[500],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                   ),
                 ],
               ),
             ),
-
             const SizedBox(height: 16),
-
-            // Action Buttons
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Row(
@@ -173,7 +143,7 @@ class QuizCard extends StatelessWidget {
                       label: const Text('Edit'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.blue,
-                        side: BorderSide(color: Colors.blue),
+                        side: const BorderSide(color: Colors.blue),
                       ),
                     ),
                   ),
@@ -193,15 +163,11 @@ class QuizCard extends StatelessWidget {
                       tooltip: 'Delete Quiz',
                     ),
                   ),
-
-
                 ],
               ),
             ),
             Row(
               children: [
-                // Expanded(
-                //   child:
                 const SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton.icon(
@@ -215,10 +181,8 @@ class QuizCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-
               ],
             ),
-            
           ],
         ),
       ),
@@ -229,18 +193,11 @@ class QuizCard extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          size: 14,
-          color: Colors.grey[600],
-        ),
+        Icon(icon, size: 14, color: Colors.grey[600]),
         const SizedBox(width: 4),
         Text(
           text,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
+          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
         ),
       ],
     );
@@ -249,7 +206,6 @@ class QuizCard extends StatelessWidget {
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
-
     if (difference.inDays > 0) {
       return '${difference.inDays}d ago';
     } else if (difference.inHours > 0) {

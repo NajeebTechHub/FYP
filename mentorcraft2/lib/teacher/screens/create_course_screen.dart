@@ -1,6 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:mentorcraft2/teacher/provider/teacher_provider.dart';
+import '../../services/course_service.dart';
 import '../models/teacher_course.dart';
 
 class CreateCourseScreen extends StatefulWidget {
@@ -19,8 +24,37 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
 
   String _selectedCategory = 'Mobile Development';
   String _selectedLevel = 'Beginner';
-  List<String> _tags = [];
   final _tagController = TextEditingController();
+  File? _selectedImage;
+  String? _uploadedImageUrl;
+
+  Future<void> _pickImage() async {
+    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _selectedImage = File(pickedFile.path);
+      });
+    }
+  }
+
+  Future<String?> _uploadImage(File imageFile) async {
+    try {
+      final fileName = 'public/course_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final bucket = Supabase.instance.client.storage.from('mentorcraft-images');
+
+      await bucket.upload(fileName, imageFile);
+      final publicUrl = bucket.getPublicUrl(fileName);
+
+      setState(() {
+        _uploadedImageUrl = publicUrl;
+      });
+
+      return publicUrl;
+    } catch (e) {
+      print('Image upload failed: $e');
+      return null;
+    }
+  }
 
   final List<String> _categories = [
     'Mobile Development',
@@ -50,7 +84,6 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create New Course'),
-        backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 0,
       ),
@@ -61,7 +94,6 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Course Title
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(
@@ -69,16 +101,10 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
                   hintText: 'Enter course title',
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a course title';
-                  }
-                  return null;
-                },
+                validator: (value) =>
+                value == null || value.isEmpty ? 'Please enter a course title' : null,
               ),
               const SizedBox(height: 16),
-
-              // Description
               TextFormField(
                 controller: _descriptionController,
                 maxLines: 4,
@@ -87,66 +113,42 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
                   hintText: 'Describe what students will learn',
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a course description';
-                  }
-                  return null;
+                validator: (value) =>
+                value == null || value.isEmpty ? 'Please enter a course description' : null,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: _selectedCategory,
+                decoration: const InputDecoration(
+                  labelText: 'Category',
+                  border: OutlineInputBorder(),
+                ),
+                items: _categories.map((category) {
+                  return DropdownMenuItem(value: category, child: Text(category));
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedCategory = value!;
+                  });
                 },
               ),
               const SizedBox(height: 16),
-
-              // Category and Level Row
-              // Row(
-              //   children: [
-              //     Expanded(
-              //       child:
-                    DropdownButtonFormField<String>(
-                      value: _selectedCategory,
-                      decoration: const InputDecoration(
-                        labelText: 'Category',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: _categories.map((category) {
-                        return DropdownMenuItem(
-                          value: category,
-                          child: Text(category),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedCategory = value!;
-                        });
-                      },
-                    ),
-                  // ),
-                  const SizedBox(height: 16),
-                  // Expanded(
-                  //   child:
-                    DropdownButtonFormField<String>(
-                      value: _selectedLevel,
-                      decoration: const InputDecoration(
-                        labelText: 'Level',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: _levels.map((level) {
-                        return DropdownMenuItem(
-                          value: level,
-                          child: Text(level),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedLevel = value!;
-                        });
-                      },
-                    ),
-                //   ),
-                // ],
-              // ),
+              DropdownButtonFormField<String>(
+                value: _selectedLevel,
+                decoration: const InputDecoration(
+                  labelText: 'Level',
+                  border: OutlineInputBorder(),
+                ),
+                items: _levels.map((level) {
+                  return DropdownMenuItem(value: level, child: Text(level));
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedLevel = value!;
+                  });
+                },
+              ),
               const SizedBox(height: 16),
-
-              // Price and Duration Row
               Row(
                 children: [
                   Expanded(
@@ -159,12 +161,8 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
                         border: OutlineInputBorder(),
                       ),
                       validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a price';
-                        }
-                        if (double.tryParse(value) == null) {
-                          return 'Please enter a valid price';
-                        }
+                        if (value == null || value.isEmpty) return 'Please enter a price';
+                        if (double.tryParse(value) == null) return 'Please enter a valid price';
                         return null;
                       },
                     ),
@@ -178,64 +176,30 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
                         hintText: '10 hours',
                         border: OutlineInputBorder(),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter duration';
-                        }
-                        return null;
-                      },
+                      validator: (value) =>
+                      value == null || value.isEmpty ? 'Please enter duration' : null,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
-
-              // Tags Section
-              const Text(
-                'Tags',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
+              GestureDetector(
+                onTap: _pickImage,
+                child: Container(
+                  height: 150,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.grey[200],
+                  ),
+                  child: _selectedImage != null
+                      ? Image.file(_selectedImage!, fit: BoxFit.cover)
+                      : _uploadedImageUrl != null
+                      ? Image.network(_uploadedImageUrl!, fit: BoxFit.cover)
+                      : const Center(child: Text('Tap to pick course image')),
                 ),
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _tagController,
-                      decoration: const InputDecoration(
-                        hintText: 'Add a tag',
-                        border: OutlineInputBorder(),
-                      ),
-                      onFieldSubmitted: _addTag,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () => _addTag(_tagController.text),
-                    child: const Text('Add'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: _tags.map((tag) {
-                  return Chip(
-                    label: Text(tag),
-                    deleteIcon: const Icon(Icons.close, size: 16),
-                    onDeleted: () {
-                      setState(() {
-                        _tags.remove(tag);
-                      });
-                    },
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 32),
-
-              // Action Buttons
+              const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
@@ -248,9 +212,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: _publishCourse,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                      ),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
                       child: const Text('Publish Course'),
                     ),
                   ),
@@ -261,15 +223,6 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
         ),
       ),
     );
-  }
-
-  void _addTag(String tag) {
-    if (tag.isNotEmpty && !_tags.contains(tag)) {
-      setState(() {
-        _tags.add(tag);
-        _tagController.clear();
-      });
-    }
   }
 
   void _saveDraft() {
@@ -284,18 +237,25 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
     }
   }
 
-  void _createCourse(bool isPublished) {
+  void _createCourse(bool isPublished) async {
     final teacherProvider = Provider.of<TeacherProvider>(context, listen: false);
 
+    String imageUrl = _uploadedImageUrl ?? 'assets/course_placeholder.jpg';
+
+    if (_selectedImage != null && _uploadedImageUrl == null) {
+      final uploadedUrl = await _uploadImage(_selectedImage!);
+      if (uploadedUrl != null) imageUrl = uploadedUrl;
+    }
+
     final course = TeacherCourse(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: '',
       title: _titleController.text,
       description: _descriptionController.text,
       category: _selectedCategory,
       level: _selectedLevel,
-      price: double.parse(_priceController.text),
+      price: double.tryParse(_priceController.text) ?? 0.0,
       duration: _durationController.text,
-      imageUrl: 'assets/course_placeholder.jpg',
+      imageUrl: imageUrl,
       teacherId: teacherProvider.teacherId,
       teacherName: teacherProvider.teacherName,
       createdAt: DateTime.now(),
@@ -304,18 +264,27 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
       enrolledStudents: 0,
       rating: 0.0,
       totalRatings: 0,
-      tags: _tags,
       modules: [],
     );
 
-    teacherProvider.addCourse(course);
-
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Course ${isPublished ? 'published' : 'saved as draft'} successfully'),
-        backgroundColor: isPublished ? Colors.green : Colors.orange,
-      ),
-    );
+    try {
+      await CourseService().addCourse(course);
+      await teacherProvider.fetchCourses(teacherProvider.teacherId);
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Course ${isPublished ? 'published' : 'saved as draft'} successfully'),
+          backgroundColor: isPublished ? Colors.green : Colors.orange,
+        ),
+      );
+    } catch (e) {
+      print('Error creating course: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error creating course: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mentorcraft2/core/models/user_role.dart';
 import 'package:mentorcraft2/student/screens/certificate_screen.dart';
 import 'package:mentorcraft2/student/screens/forum_screen.dart';
 import 'package:mentorcraft2/student/screens/learning_history_screen.dart';
@@ -7,6 +8,10 @@ import 'package:mentorcraft2/student/screens/progress_tracking_screen.dart';
 import 'package:mentorcraft2/student/screens/quiz_screen.dart';
 import 'package:mentorcraft2/student/screens/settings_screen.dart';
 import 'package:mentorcraft2/theme/color.dart';
+import 'package:provider/provider.dart';
+
+import '../../../auth/simple_auth_provider.dart';
+import '../../../screens/auth/login_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   final int currentIndex;
@@ -304,15 +309,25 @@ class AppDrawer extends StatelessWidget {
                     child: const Text('CANCEL'),
                   ),
                   TextButton(
-                    onPressed: () {
-                      Navigator.pop(context); // Close dialog
-                      Navigator.pop(context); // Close drawer
-                      // Handle logout
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Logged out successfully'),
-                        ),
-                      );
+                    onPressed: () async{
+
+                        Navigator.pop(context); // Close dialog
+                        Navigator.pop(context); // Close drawer
+
+                        // Perform logout
+                        final authProvider = Provider.of<SimpleAuthProvider>(context, listen: false);
+                        await authProvider.signOut();
+
+                        // Navigate to LoginScreen
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(builder: (context) =>  LoginScreen(selectedRole: UserRole.teacher,)),
+                              (route) => false,
+                        );
+
+                        // Show confirmation snackbar
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Logged out successfully')),
+                        );
                     },
                     child: const Text('LOGOUT'),
                   ),

@@ -1,31 +1,42 @@
+import 'dart:io';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'dart:async';
 import 'package:mentorcraft2/theme/color.dart';
+import 'package:path/path.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide User;
+
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({super.key});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderStateMixin {
+class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateMixin {
+
   late AnimationController _animationController;
   late Animation<double> _avatarAnimation;
   late Animation<double> _fadeAnimation;
 
   // Sample user data - in a real app this would come from a user model
-  final String userName = "John Doe";
-  final String userEmail = "johndoe@example.com";
+  String get userName => currentUser?.displayName ?? "Student";
+  String get userEmail => currentUser?.email ?? "No Email";
   final int enrolledCourses = 8;
   final int completedCourses = 3;
   final int certificatesEarned = 2;
+  late User? currentUser;
 
   @override
   void initState() {
     super.initState();
 
-    // Initialize animations
+    currentUser = FirebaseAuth.instance.currentUser;
+
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
@@ -45,8 +56,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       ),
     );
 
-    // Start the animation after the first frame
-    Timer(const Duration(milliseconds: 100), () {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       _animationController.forward();
     });
   }
@@ -63,37 +73,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     final bool isTablet = screenSize.width > 600;
 
     return Scaffold(
-      // appBar: AppBar(
-      //   title: const Text(
-      //     'My Profile',
-      //     style: TextStyle(
-      //       fontWeight: FontWeight.bold,
-      //     ),
-      //   ),
-      //   backgroundColor: AppColors.darkBlue,
-      //   elevation: 0,
-      //   actions: [
-      //     IconButton(
-      //       icon: const Icon(Icons.workspace_premium),
-      //       tooltip: 'My Certificates',
-      //       onPressed: () {
-      //         Navigator.pushNamed(context, '/certificates');
-      //       },
-      //     ),
-      //     IconButton(
-      //       icon: const Icon(Icons.settings),
-      //       onPressed: () {
-      //         // Navigate to settings
-      //         ScaffoldMessenger.of(context).showSnackBar(
-      //           const SnackBar(
-      //             content: Text('Settings coming soon!'),
-      //             duration: Duration(seconds: 1),
-      //           ),
-      //         );
-      //       },
-      //     ),
-      //   ],
-      // ),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -157,7 +136,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         animation: _avatarAnimation,
                         builder: (context, child) {
                           return Transform.scale(
-                            scale: 0.5 + (_avatarAnimation.value * 0.5),
+                            scale: (_avatarAnimation.value.clamp(0.0, 1.0) * 0.5) + 0.5,
                             child: Container(
                               width: isTablet ? 140 : 120,
                               height: isTablet ? 140 : 120,
@@ -292,6 +271,51 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     );
   }
 
+  Future<void> _pickAndUploadImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      final file = File(pickedFile.path);
+      final fileName = basename(pickedFile.path);
+
+      try {
+        final userId = currentUser?.uid;
+
+        if (userId == null) {
+          throw Exception('User not logged in');
+        }
+
+        final storagePath = 'profile_pics/$userId/$fileName';
+
+        // Upload to Supabase
+        final storage = Supabase.instance.client.storage;
+        await storage.from('mentorcrafte_images').upload(
+          storagePath,
+          file,
+          fileOptions: const FileOptions(upsert: true),
+        );
+
+        // Get public URL
+        final imageUrl = storage.from('mentorcrafte_images').getPublicUrl(storagePath);
+
+        // Save it to Firebase User Profile or app state
+        setState(() {
+          var profileImageUrl = imageUrl;
+        });
+
+        ScaffoldMessenger.of(context as BuildContext).showSnackBar(
+          const SnackBar(content: Text('Profile picture updated')),
+        );
+      } catch (e) {
+        debugPrint('Image upload failed: $e');
+        ScaffoldMessenger.of(context as BuildContext).showSnackBar(
+          SnackBar(content: Text('Failed to upload image: $e')),
+        );
+      }
+    }
+  }
+
   Widget _buildStatisticsSection(BuildContext context, bool isTablet) {
     Widget buildStatCard(String title, int value, IconData icon) {
       return Expanded(
@@ -355,13 +379,17 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             Expanded(
               child: ElevatedButton.icon(
                 onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const EditProfileScreen()),
+                    );
                   // Navigate to edit profile
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Edit Profile coming soon!'),
-                      duration: Duration(seconds: 1),
-                    ),
-                  );
+                  // ScaffoldMessenger.of(context).showSnackBar(
+                  //   const SnackBar(
+                  //     content: Text('Edit Profile coming soon!'),
+                  //     duration: Duration(seconds: 1),
+                  //   ),
+                  // );
                 },
                 icon: const Icon(Icons.edit),
                 label: const Text('Edit Profile'),
@@ -379,14 +407,15 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             const SizedBox(width: 12),
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () {
+                onPressed: () async{
                   // Navigate to change password
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Change Password coming soon!'),
-                      duration: Duration(seconds: 1),
-                    ),
-                  );
+                    final email = FirebaseAuth.instance.currentUser?.email;
+                    if (email != null) {
+                      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Password reset link sent to your email")),
+                      );
+                    }
                 },
                 icon: const Icon(Icons.lock_outline),
                 label: const Text('Change Password'),
@@ -622,15 +651,12 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               ),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async{
                 Navigator.of(context).pop(); // Close dialog
                 // Perform logout action
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Logged out successfully'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
+                  await FirebaseAuth.instance.signOut();
+                  Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.accent,

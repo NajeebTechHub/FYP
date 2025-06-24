@@ -15,7 +15,6 @@ class TeacherCourse {
   final int enrolledStudents;
   final double rating;
   final int totalRatings;
-  final List<String> tags;
   final List<CourseModule> modules;
 
   TeacherCourse({
@@ -35,7 +34,6 @@ class TeacherCourse {
     required this.enrolledStudents,
     required this.rating,
     required this.totalRatings,
-    required this.tags,
     required this.modules,
   });
 
@@ -57,7 +55,6 @@ class TeacherCourse {
       enrolledStudents: json['enrolledStudents'] ?? 0,
       rating: (json['rating'] ?? 0.0).toDouble(),
       totalRatings: json['totalRatings'] ?? 0,
-      tags: List<String>.from(json['tags'] ?? []),
       modules: (json['modules'] as List?)?.map((m) => CourseModule.fromJson(m)).toList() ?? [],
     );
   }
@@ -80,7 +77,6 @@ class TeacherCourse {
       'enrolledStudents': enrolledStudents,
       'rating': rating,
       'totalRatings': totalRatings,
-      'tags': tags,
       'modules': modules.map((m) => m.toJson()).toList(),
     };
   }

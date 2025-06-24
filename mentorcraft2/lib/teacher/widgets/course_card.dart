@@ -39,7 +39,19 @@ class TeacherCourseCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: Container(
+                child: course.imageUrl.startsWith('http')
+                    ? Image.network(
+                  course.imageUrl,
+                  height: 120,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    height: 120,
+                    color: Colors.blue.withOpacity(0.1),
+                    child: Icon(Icons.broken_image, size: 48, color: Colors.blue),
+                  ),
+                )
+                    : Container(
                   height: 120,
                   width: double.infinity,
                   color: Colors.blue.withOpacity(0.1),
@@ -153,7 +165,7 @@ class TeacherCourseCard extends StatelessWidget {
                           course.isPublished ? Icons.unpublished : Icons.publish,
                           size: 16,
                         ),
-                        label: Text(course.isPublished ? 'Unpublish' : 'Publish',style: TextStyle(fontSize: 13),),
+                        label: Text(course.isPublished ? 'Unpublish' : 'Publish', style: TextStyle(fontSize: 13)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: course.isPublished ? Colors.orange : Colors.green,
                           foregroundColor: Colors.white,

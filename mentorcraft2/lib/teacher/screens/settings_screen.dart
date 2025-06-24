@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 
 import '../../auth/simple_auth_provider.dart';
 import '../../core/models/user_role.dart';
-import '../../core/provider/theme_privider.dart';
 import '../../screens/auth/login_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -190,8 +189,6 @@ class SettingsScreen extends StatelessWidget {
   }
 
   Widget _buildThemeModeTile(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-
     return SwitchListTile(
       secondary: Container(
         width: 40,
@@ -220,13 +217,18 @@ class SettingsScreen extends StatelessWidget {
           fontSize: 14,
         ),
       ),
-      value: themeProvider.isDarkMode,
+      value: false,
       onChanged: (bool value) {
-        themeProvider.toggleTheme(value);
+        // Theme switching logic will be implemented here
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Theme switching coming soon!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
       },
     );
   }
-
 
   Widget _buildLanguageTile(BuildContext context) {
     return _buildSettingTile(
@@ -273,15 +275,15 @@ class SettingsScreen extends StatelessWidget {
 
                       // Navigate to LoginScreen
                       Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (context) =>  LoginScreen(selectedRole: UserRole.teacher,)),
-                      (route) => false,
+                        MaterialPageRoute(builder: (context) =>  LoginScreen(selectedRole: UserRole.teacher,)),
+                            (route) => false,
                       );
 
                       // Show confirmation snackbar
                       ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Logged out successfully')),
+                        const SnackBar(content: Text('Logged out successfully')),
                       );
-                      },
+                    },
                     style: TextButton.styleFrom(
                       // backgroundColor: w,
                     ),

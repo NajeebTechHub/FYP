@@ -23,6 +23,10 @@ class _CourseManagementScreenState extends State<CourseManagementScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    Future.microtask(() {
+      final teacherId = Provider.of<TeacherProvider>(context, listen: false).teacherId;
+      Provider.of<TeacherProvider>(context, listen: false).subscribeToCourses(teacherId);
+    });
   }
 
   @override
@@ -38,7 +42,6 @@ class _CourseManagementScreenState extends State<CourseManagementScreen>
       appBar: AppBar(
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
-        // elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Column(
@@ -168,7 +171,7 @@ class _CourseManagementScreenState extends State<CourseManagementScreen>
             },
             onTogglePublish: () {
               Provider.of<TeacherProvider>(context, listen: false)
-                  .toggleCoursePublished(course.id);
+                  .toggleCoursePublished(course.id,!course.isPublished);
             },
           ),
         );

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/teacher_announcement.dart';
-import '../../theme/color.dart';
 
 class AnnouncementCard extends StatelessWidget {
   final TeacherAnnouncement announcement;

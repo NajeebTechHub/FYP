@@ -19,20 +19,27 @@ class _QuizManagementScreenState extends State<QuizManagementScreen> {
   String _searchQuery = '';
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<TeacherProvider>(context, listen: false).fetchQuizzes();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
+
       body: Consumer<TeacherProvider>(
         builder: (context, teacherProvider, child) {
           return Column(
             children: [
-              // Filters and Search
               Container(
                 color: Colors.white,
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    // Search Bar
                     TextField(
                       decoration: InputDecoration(
                         hintText: 'Search quizzes...',
@@ -51,56 +58,13 @@ class _QuizManagementScreenState extends State<QuizManagementScreen> {
                       },
                     ),
                     const SizedBox(height: 12),
-
-                    // Course Filter
-                    // Row(
-                    //   children: [
-                    //     const Text(
-                    //       'Filter by course:',
-                    //       style: TextStyle(
-                    //         fontWeight: FontWeight.w500,
-                    //         color: Colors.black87,
-                    //       ),
-                    //     ),
-                    //     const SizedBox(width: 12),
-                    //     Expanded(
-                    //       child: DropdownButtonFormField<String>(
-                    //         value: _selectedCourse,
-                    //         decoration: InputDecoration(
-                    //           border: OutlineInputBorder(
-                    //             borderRadius: BorderRadius.circular(8),
-                    //             borderSide: BorderSide.none,
-                    //           ),
-                    //           filled: true,
-                    //           fillColor: Colors.grey[100],
-                    //           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    //         ),
-                    //         items: [
-                    //           const DropdownMenuItem(
-                    //             value: 'all',
-                    //             child: Text('All Courses'),
-                    //           ),
-                    //           ...teacherProvider.courses.map((course) => DropdownMenuItem(
-                    //             value: course.id,
-                    //             child: Text(course.title),
-                    //           )).toList(),
-                    //         ],
-                    //         onChanged: (value) {
-                    //           setState(() {
-                    //             _selectedCourse = value!;
-                    //           });
-                    //         },
-                    //       ),
-                    //     ),
-                    //   ],
-                    // ),
                   ],
                 ),
               ),
-
-              // Quiz List
               Expanded(
-                child: _buildQuizList(teacherProvider),
+                child: teacherProvider.isQuizLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _buildQuizList(teacherProvider),
               ),
             ],
           );
@@ -116,8 +80,8 @@ class _QuizManagementScreenState extends State<QuizManagementScreen> {
           );
         },
         backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.quiz,color: Colors.white,),
-        label: const Text('Create Quiz',style: TextStyle(color: Colors.white),),
+        icon: const Icon(Icons.quiz, color: Colors.white),
+        label: const Text('Create Quiz', style: TextStyle(color: Colors.white)),
       ),
     );
   }
@@ -125,16 +89,15 @@ class _QuizManagementScreenState extends State<QuizManagementScreen> {
   Widget _buildQuizList(TeacherProvider teacherProvider) {
     List<TeacherQuiz> filteredQuizzes = teacherProvider.quizzes;
 
-    // Filter by course
     if (_selectedCourse != 'all') {
       filteredQuizzes = filteredQuizzes.where((quiz) => quiz.courseId == _selectedCourse).toList();
     }
 
-    // Filter by search query
     if (_searchQuery.isNotEmpty) {
       filteredQuizzes = filteredQuizzes.where((quiz) =>
       quiz.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          quiz.courseName.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+          quiz.courseName.toLowerCase().contains(_searchQuery.toLowerCase())
+      ).toList();
     }
 
     if (filteredQuizzes.isEmpty) {
@@ -142,29 +105,18 @@ class _QuizManagementScreenState extends State<QuizManagementScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.quiz_outlined,
-              size: 64,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.quiz_outlined, size: 64, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
               _searchQuery.isEmpty ? 'No quizzes found' : 'No quizzes match your search',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(fontSize: 18, color: Colors.grey[600], fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 8),
             Text(
               _searchQuery.isEmpty
                   ? 'Create your first quiz to get started'
                   : 'Try adjusting your search terms',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[500],
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
             ),
           ],
         ),
@@ -180,12 +132,8 @@ class _QuizManagementScreenState extends State<QuizManagementScreen> {
           padding: const EdgeInsets.only(bottom: 16),
           child: QuizCard(
             quiz: quiz,
-            onEdit: () {
-              // Navigate to edit quiz
-            },
-            onDelete: () {
-              _showDeleteConfirmation(context, quiz, teacherProvider);
-            },
+            onEdit: () {},
+            onDelete: () => _showDeleteConfirmation(context, quiz, teacherProvider),
             onViewSubmissions: () {
               Navigator.push(
                 context,
@@ -194,9 +142,7 @@ class _QuizManagementScreenState extends State<QuizManagementScreen> {
                 ),
               );
             },
-            onToggleActive: () {
-              // Toggle quiz active status
-            },
+            onToggleActive: () {},
           ),
         );
       },
@@ -209,9 +155,7 @@ class _QuizManagementScreenState extends State<QuizManagementScreen> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Delete Quiz'),
-          content: Text(
-            'Are you sure you want to delete "${quiz.title}"? This action cannot be undone.',
-          ),
+          content: Text('Are you sure you want to delete "${quiz.title}"? This action cannot be undone.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
