@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class TeacherCourse {
   final String id;
   final String title;
@@ -15,7 +17,7 @@ class TeacherCourse {
   final int enrolledStudents;
   final double rating;
   final int totalRatings;
-  final List<CourseModule> modules;
+  List<CourseModule> modules;
 
   TeacherCourse({
     required this.id,
@@ -38,6 +40,15 @@ class TeacherCourse {
   });
 
   factory TeacherCourse.fromJson(Map<String, dynamic> json) {
+
+    DateTime _parseDate(dynamic value) {
+      if (value == null) return DateTime.now();
+      if (value is Timestamp) return value.toDate();
+      if (value is String) return DateTime.tryParse(value) ?? DateTime.now();
+      return DateTime.now(); // fallback
+    }
+
+
     return TeacherCourse(
       id: json['id'] ?? '',
       title: json['title'] ?? '',
@@ -49,8 +60,8 @@ class TeacherCourse {
       imageUrl: json['imageUrl'] ?? '',
       teacherId: json['teacherId'] ?? '',
       teacherName: json['teacherName'] ?? '',
-      createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(json['updatedAt'] ?? DateTime.now().toIso8601String()),
+      createdAt: _parseDate(json['createdAt']),
+      updatedAt: _parseDate(json['updatedAt']),
       isPublished: json['isPublished'] ?? false,
       enrolledStudents: json['enrolledStudents'] ?? 0,
       rating: (json['rating'] ?? 0.0).toDouble(),
@@ -80,6 +91,46 @@ class TeacherCourse {
       'modules': modules.map((m) => m.toJson()).toList(),
     };
   }
+
+  TeacherCourse copyWith({
+    String? id,
+    String? title,
+    String? description,
+    String? category,
+    String? level,
+    double? price,
+    String? duration,
+    String? imageUrl,
+    String? teacherId,
+    String? teacherName,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    bool? isPublished,
+    int? enrolledStudents,
+    double? rating,
+    int? totalRatings,
+    List<CourseModule>? modules,
+  }) {
+    return TeacherCourse(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      category: category ?? this.category,
+      level: level ?? this.level,
+      price: price ?? this.price,
+      duration: duration ?? this.duration,
+      imageUrl: imageUrl ?? this.imageUrl,
+      teacherId: teacherId ?? this.teacherId,
+      teacherName: teacherName ?? this.teacherName,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      isPublished: isPublished ?? this.isPublished,
+      enrolledStudents: enrolledStudents ?? this.enrolledStudents,
+      rating: rating ?? this.rating,
+      totalRatings: totalRatings ?? this.totalRatings,
+      modules: modules ?? this.modules,
+    );
+  }
 }
 
 class CourseModule {
@@ -87,7 +138,7 @@ class CourseModule {
   final String title;
   final String description;
   final int order;
-  final List<Lesson> lessons;
+  List<Lesson> lessons;
 
   CourseModule({
     required this.id,
@@ -115,6 +166,22 @@ class CourseModule {
       'order': order,
       'lessons': lessons.map((l) => l.toJson()).toList(),
     };
+  }
+
+  CourseModule copyWith({
+    String? id,
+    String? title,
+    String? description,
+    int? order,
+    List<Lesson>? lessons,
+  }) {
+    return CourseModule(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      order: order ?? this.order,
+      lessons: lessons ?? this.lessons,
+    );
   }
 }
 
@@ -160,180 +227,24 @@ class Lesson {
       'order': order,
     };
   }
+
+  Lesson copyWith({
+    String? id,
+    String? title,
+    String? content,
+    String? type,
+    String? videoUrl,
+    int? duration,
+    int? order,
+  }) {
+    return Lesson(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      type: type ?? this.type,
+      videoUrl: videoUrl ?? this.videoUrl,
+      duration: duration ?? this.duration,
+      order: order ?? this.order,
+    );
+  }
 }
-
-
-// // 1️⃣ Updated: teacher_course.dart
-//
-//
-//
-// import 'package:cloud_firestore/cloud_firestore.dart';
-//
-// // ----------------------------
-// // Lesson Model
-// // ----------------------------
-// class Lesson {
-//   final String id;
-//   late final String title;
-//   late final String description;
-//   late final String videoUrl;
-//
-//   Lesson({
-//     required this.id,
-//     required this.title,
-//     required this.description,
-//     required this.videoUrl,
-//   });
-//
-//   factory Lesson.fromJson(Map<String, dynamic> json) {
-//     return Lesson(
-//       id: json['id'] ?? '',
-//       title: json['title'] ?? '',
-//       description: json['description'] ?? '',
-//       videoUrl: json['videoUrl'] ?? '',
-//     );
-//   }
-//
-//   Map<String, dynamic> toJson() {
-//     return {
-//       'id': id,
-//       'title': title,
-//       'description': description,
-//       'videoUrl': videoUrl,
-//     };
-//   }
-// }
-//
-// // ----------------------------
-// // Module Model
-// // ----------------------------
-// class Module {
-//   final String id;
-//   final String title;
-//   final List<Lesson> lessons;
-//
-//   Module({
-//     required this.id,
-//     required this.title,
-//     this.lessons = const [],
-//   });
-//
-//   factory Module.fromJson(Map<String, dynamic> json) {
-//     return Module(
-//       id: json['id'] ?? '',
-//       title: json['title'] ?? '',
-//       lessons: (json['lessons'] as List<dynamic>? ?? [])
-//           .map((l) => Lesson.fromJson(l as Map<String, dynamic>))
-//           .toList(),
-//     );
-//   }
-//
-//   Map<String, dynamic> toJson() {
-//     return {
-//       'id': id,
-//       'title': title,
-//       'lessons': lessons.map((l) => l.toJson()).toList(),
-//     };
-//   }
-// }
-//
-// // ----------------------------
-// // TeacherCourse Model
-// // ----------------------------
-// class TeacherCourse {
-//   final String id;
-//   final String title;
-//   final String description;
-//   final String category;
-//   final String level;
-//   final double price;
-//   final String duration;
-//   final String imageUrl;
-//   final String teacherId;
-//   final String teacherName;
-//   final DateTime createdAt;
-//   final DateTime updatedAt;
-//   final bool isPublished;
-//   final int enrolledStudents;
-//   final double rating;
-//   final int totalRatings;
-//   final List<Module> modules;
-//
-//   TeacherCourse({
-//     required this.id,
-//     required this.title,
-//     required this.description,
-//     required this.category,
-//     required this.level,
-//     required this.price,
-//     required this.duration,
-//     required this.imageUrl,
-//     required this.teacherId,
-//     required this.teacherName,
-//     required this.createdAt,
-//     required this.updatedAt,
-//     required this.isPublished,
-//     required this.enrolledStudents,
-//     required this.rating,
-//     required this.totalRatings,
-//     required this.modules,
-//   });
-//
-//   factory TeacherCourse.fromJson(Map<String, dynamic> json) {
-//     return TeacherCourse(
-//       id: json['id'] ?? '',
-//       title: json['title'] ?? '',
-//       description: json['description'] ?? '',
-//       category: json['category'] ?? '',
-//       level: json['level'] ?? '',
-//       price: (json['price'] ?? 0).toDouble(),
-//       duration: json['duration'] ?? '',
-//       imageUrl: json['imageUrl'] ?? '',
-//       teacherId: json['teacherId'] ?? '',
-//       teacherName: json['teacherName'] ?? '',
-//       createdAt: _parseTimestamp(json['createdAt']),
-//       updatedAt: _parseTimestamp(json['updatedAt']),
-//       isPublished: json['isPublished'] ?? false,
-//       enrolledStudents: json['enrolledStudents'] ?? 0,
-//       rating: (json['rating'] ?? 0).toDouble(),
-//       totalRatings: json['totalRatings'] ?? 0,
-//       modules: (json['modules'] as List<dynamic>? ?? [])
-//           .map((m) => Module.fromJson(m as Map<String, dynamic>))
-//           .toList(),
-//     );
-//   }
-//
-//   Map<String, dynamic> toJson() {
-//     return {
-//       'id': id,
-//       'title': title,
-//       'description': description,
-//       'category': category,
-//       'level': level,
-//       'price': price,
-//       'duration': duration,
-//       'imageUrl': imageUrl,
-//       'teacherId': teacherId,
-//       'teacherName': teacherName,
-//       'createdAt': createdAt.toIso8601String(),
-//       'updatedAt': updatedAt.toIso8601String(),
-//       'isPublished': isPublished,
-//       'enrolledStudents': enrolledStudents,
-//       'rating': rating,
-//       'totalRatings': totalRatings,
-//       'modules': modules.map((m) => m.toJson()).toList(),
-//     };
-//   }
-//
-//   static DateTime _parseTimestamp(dynamic value) {
-//     if (value is Timestamp) {
-//       return value.toDate();
-//     } else if (value is String) {
-//       return DateTime.tryParse(value) ?? DateTime.now();
-//     } else {
-//       return DateTime.now();
-//     }
-//   }
-// }
-//
-//

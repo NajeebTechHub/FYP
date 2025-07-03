@@ -5,6 +5,7 @@ import 'package:mentorcraft2/student/screens/home.dart';
 import 'package:mentorcraft2/student/screens/my_courses_screen.dart';
 import 'package:mentorcraft2/student/screens/profile_screen.dart';
 import 'package:mentorcraft2/student/widgets/main_widgets/app_drawer.dart';
+import 'package:mentorcraft2/teacher/screens/teacher_main_screen.dart';
 
 import '../theme/color.dart';
 
@@ -89,6 +90,9 @@ class _StudentMainScreenState extends State<StudentMainScreen> with SingleTicker
               IconButton(
                 icon: const Icon(Icons.notifications_outlined),
                 onPressed: () {
+                  Navigator.of(context).push(MaterialPageRoute(builder: (context){
+                    return TeacherMainScreen();
+                  }));
                   // Navigation for notifications
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(

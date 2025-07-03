@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mentorcraft2/student/widgets/main_widgets/appbar_widget.dart';
 import '../widgets/home_widgets/benifitsection.dart';
 import '../models/course.dart';
-import '../widgets/explore_widgets/category_filter.dart';
 import '../widgets/home_widgets/coursecard.dart';
 import '../widgets/home_widgets/feature.dart';
 import '../widgets/home_widgets/footerwidget.dart';
@@ -140,15 +138,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: CourseCard(
                   course: Course(
                     id: 'course$index',
-                    name: 'Complete Web Development Bootcamp',
+                    // name: 'Complete Web Development Bootcamp',
                     description: 'Learn web development from scratch',
                     price: 99.99,
                     duration: '12 weeks',
                     level: 'Beginner',
                     rating: 4.5,
-                    studentsCount: 1234,
-                    instructor: 'John Doe',
-                    tags: ['Web Development', 'JavaScript', 'HTML', 'CSS'], imageUrl: '',
+                    // studentsCount: 1234,
+                    // instructor: 'John Doe',
+                    // tags: ['Web Developme: '' 'JavaScript', : ''L', 'CSS'],
+                    imageUrl: '',
+                    title: '',
+                    teacherId: '',
+                    teacherName: '',
+                    totalRating: 0.0,
+                    createdAt: DateTime.now(),
+                    updatedAt: DateTime.now(),
+                    enrolledStudents: 0,
                   ),
                 ),
               );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mentorcraft2/student/student_main_app.dart';
 import 'package:mentorcraft2/teacher/screens/settings_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:mentorcraft2/teacher/provider/teacher_provider.dart';
@@ -90,7 +91,12 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> with SingleTicker
               Navigator.of(context).push(MaterialPageRoute(builder: (context){
                 return SettingsScreen();
               }));
-            }, icon: Icon(Icons.settings))
+            }, icon: Icon(Icons.settings)),
+            IconButton(onPressed: (){
+              Navigator.of(context).push(MaterialPageRoute(builder: (context){
+                return StudentMainScreen();
+              }));
+            }, icon: Icon(Icons.settings)),
           ],
         ),
         body: _screens[_selectedIndex],

@@ -105,7 +105,7 @@ class EnrolledCourseCard extends StatelessWidget {
               children: [
                 // Course Title
                 Text(
-                  enrolledCourse.course.name,
+                  enrolledCourse.course.teacherName,
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -127,7 +127,7 @@ class EnrolledCourseCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      enrolledCourse.course.instructor,
+                      enrolledCourse.course.teacherName,
                       style: const TextStyle(
                         fontSize: 14,
                         color: AppColors.textSecondary,

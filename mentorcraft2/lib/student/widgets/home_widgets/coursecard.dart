@@ -38,7 +38,7 @@ class CourseCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    course.name,
+                    course.teacherName,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -47,7 +47,7 @@ class CourseCard extends StatelessWidget {
                   ),
 
                   Text(
-                    course.instructor,
+                    course.teacherName,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -63,7 +63,7 @@ class CourseCard extends StatelessWidget {
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       Text(
-                        ' • ${course.studentsCount} students',
+                        ' • ${course.enrolledStudents} students',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: AppColors.textSecondary,
                         ),

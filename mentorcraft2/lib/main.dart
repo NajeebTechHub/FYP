@@ -117,7 +117,7 @@ class MentorCraftApp extends StatelessWidget {
           size: 24,
         ),
       ),
-      home: const TeacherMainScreen(),
+      home: const StudentMainScreen(),
     );
   }
 }
