@@ -1,6 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
+import 'package:mentorcraft2/student/screens/quiz_attempts_screen.dart';
 import 'package:mentorcraft2/theme/color.dart';
+import 'package:mentorcraft2/student/models/quiz_model.dart';
 
 class QuizScreen extends StatelessWidget {
   const QuizScreen({Key? key}) : super(key: key);
@@ -8,65 +10,57 @@ class QuizScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Quizzes & Assessments'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Available Quizzes',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: AppColors.darkBlue,
-              ),
-            ),
-            const SizedBox(height: 16),
+      appBar: AppBar(title: const Text('Quizzes & Assessments')),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('quizzes')
+            .where('isActive', isEqualTo: true) // ✅ Only active quizzes
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-            // Sample quiz cards
-            _buildQuizCard(
-              context,
-              'Flutter Basics',
-              'Test your knowledge of Flutter widgets and concepts',
-              10,
-              'Beginner',
-              0.0, // Not started
-            ),
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text('No active quizzes available.'));
+          }
 
-            _buildQuizCard(
-              context,
-              'State Management',
-              'Test your understanding of state management in Flutter',
-              15,
-              'Intermediate',
-              0.3, // In progress
-            ),
+          final quizzes = snapshot.data!.docs.map((doc) {
+            return TeacherQuiz.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+          }).toList();
 
-            _buildQuizCard(
-              context,
-              'Advanced UI Patterns',
-              'Demonstrate your expertise in building complex UI patterns',
-              20,
-              'Advanced',
-              1.0, // Completed
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Available Quizzes',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.darkBlue,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ...quizzes.map((quiz) => _buildQuizCard(context, quiz, 0.0)).toList(),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildQuizCard(
-      BuildContext context,
-      String title,
-      String description,
-      int questions,
-      String level,
-      double progress,
-      ) {
+  String _getLevelFromPassingScore(double score) {
+    if (score <= 40) return 'Beginner';
+    if (score <= 70) return 'Intermediate';
+    return 'Advanced';
+  }
+
+  Widget _buildQuizCard(BuildContext context, TeacherQuiz quiz, double progress) {
+    final String level = _getLevelFromPassingScore(quiz.passingScore);
+
     Color levelColor;
     switch (level.toLowerCase()) {
       case 'beginner':
@@ -97,9 +91,7 @@ class QuizScreen extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -108,32 +100,20 @@ class QuizScreen extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(
-                  Icons.quiz,
-                  color: AppColors.primary,
-                ),
+                const Icon(Icons.quiz, color: AppColors.primary),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    quiz.title,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: levelColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(
-                      color: levelColor,
-                      width: 1,
-                    ),
+                    border: Border.all(color: levelColor, width: 1),
                   ),
                   child: Text(
                     level,
@@ -147,48 +127,19 @@ class QuizScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            Text(
-              description,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-              ),
-            ),
+            Text(quiz.description, style: const TextStyle(color: AppColors.textSecondary)),
             const SizedBox(height: 12),
             Row(
               children: [
-                const Icon(
-                  Icons.help_outline,
-                  size: 16,
-                  color: AppColors.textSecondary,
-                ),
+                const Icon(Icons.help_outline, size: 16, color: AppColors.textSecondary),
                 const SizedBox(width: 4),
-                Text(
-                  '$questions Questions',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+                Text('${quiz.questions.length} Questions', style: const TextStyle(color: AppColors.textSecondary)),
                 const SizedBox(width: 16),
-                const Icon(
-                  Icons.timer_outlined,
-                  size: 16,
-                  color: AppColors.textSecondary,
-                ),
+                const Icon(Icons.timer_outlined, size: 16, color: AppColors.textSecondary),
                 const SizedBox(width: 4),
-                Text(
-                  '${questions * 2} Minutes',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+                Text('${quiz.timeLimit} Minutes', style: const TextStyle(color: AppColors.textSecondary)), // ✅ Using Firestore value
                 const Spacer(),
-                Text(
-                  statusText,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                Text(statusText, style: TextStyle(color: statusColor, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 16),
@@ -206,21 +157,26 @@ class QuizScreen extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  // Start or continue quiz
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => QuizAttemptScreen(quiz: quiz),
+                      ),
+                    );
+
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.darkBlue,
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
                 child: Text(
                   progress == 0.0
                       ? 'Start Quiz'
                       : progress == 1.0
                       ? 'Review Quiz'
-                      : 'Continue Quiz',style: TextStyle(color: Colors.white),
+                      : 'Continue Quiz',
+                  style: const TextStyle(color: Colors.white),
                 ),
               ),
             ),

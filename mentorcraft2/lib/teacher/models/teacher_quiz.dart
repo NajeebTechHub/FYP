@@ -45,11 +45,13 @@ class TeacherQuiz {
       timeLimit: json['timeLimit'] ?? 60,
       attempts: json['attempts'] ?? 3,
       passingScore: (json['passingScore'] ?? 70.0).toDouble(),
-      createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(json['updatedAt'] ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.parse(
+          json['createdAt'] ?? DateTime.now().toIso8601String()),
+      updatedAt: DateTime.parse(
+          json['updatedAt'] ?? DateTime.now().toIso8601String()),
       isActive: json['isActive'] ?? true,
       totalSubmissions: json['totalSubmissions'] ?? 0,
-      teacherId: json['teacherId'] ?? '', // ✅ FIXED
+      teacherId: json['teacherId'] ?? '',
     );
   }
 
@@ -68,8 +70,42 @@ class TeacherQuiz {
       'updatedAt': updatedAt.toIso8601String(),
       'isActive': isActive,
       'totalSubmissions': totalSubmissions,
-      'teacherId': teacherId, // ✅ FIXED
+      'teacherId': teacherId,
     };
+  }
+
+  TeacherQuiz copyWith({
+    String? id,
+    String? title,
+    String? description,
+    String? courseId,
+    String? courseName,
+    List<QuizQuestion>? questions,
+    int? timeLimit,
+    int? attempts,
+    double? passingScore,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    bool? isActive,
+    int? totalSubmissions,
+    String? teacherId,
+  }) {
+    return TeacherQuiz(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      courseId: courseId ?? this.courseId,
+      courseName: courseName ?? this.courseName,
+      questions: questions ?? this.questions,
+      timeLimit: timeLimit ?? this.timeLimit,
+      attempts: attempts ?? this.attempts,
+      passingScore: passingScore ?? this.passingScore,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      isActive: isActive ?? this.isActive,
+      totalSubmissions: totalSubmissions ?? this.totalSubmissions,
+      teacherId: teacherId ?? this.teacherId,
+    );
   }
 }
 

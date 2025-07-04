@@ -22,7 +22,7 @@ class QuizService {
     await _firestore.collection(_collectionPath).doc(quizId).delete();
   }
 
-  // Get all quizzes by teacher ID
+  // Get all quizzes by teacher ID (non-realtime)
   Future<List<TeacherQuiz>> getQuizzesByTeacher(String teacherId) async {
     try {
       final snapshot = await _firestore
@@ -40,6 +40,20 @@ class QuizService {
       return [];
     }
   }
+
+  // ✅ Real-time quizzes by teacher ID
+  Stream<List<TeacherQuiz>> listenToQuizzesByTeacher(String teacherId) {
+    return _firestore
+        .collection(_collectionPath)
+        .where('teacherId', isEqualTo: teacherId)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) {
+      final data = doc.data();
+      data['id'] = doc.id;
+      return TeacherQuiz.fromJson(data);
+    }).toList());
+  }
+
 
   // Get all quizzes by course ID
   Future<List<TeacherQuiz>> getQuizzesByCourse(String courseId) async {

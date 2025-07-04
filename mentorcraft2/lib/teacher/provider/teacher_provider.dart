@@ -11,10 +11,13 @@ class TeacherProvider with ChangeNotifier {
   final CourseService _courseService = CourseService();
   final QuizService _quizService = QuizService();
   StreamSubscription<List<TeacherCourse>>? _courseSubscription;
+  StreamSubscription<List<TeacherQuiz>>? _quizSubscription;
 
-  // constructor to auto-fetch courses
+  // constructor to auto-fetch data
   TeacherProvider() {
     fetchCourses(_teacherId);
+    subscribeToCourses(_teacherId);
+    subscribeToQuizzes(_teacherId);
   }
 
   // State
@@ -102,8 +105,15 @@ class TeacherProvider with ChangeNotifier {
     await _courseService.toggleCoursePublished(courseId, publish);
   }
 
-
   // Quiz Methods
+  void subscribeToQuizzes(String teacherId) {
+    _quizSubscription?.cancel();
+    _quizSubscription = _quizService.listenToQuizzesByTeacher(teacherId).listen((updatedQuizzes) {
+      _quizzes = updatedQuizzes;
+      notifyListeners();
+    });
+  }
+
   Future<void> fetchQuizzes() async {
     _isQuizLoading = true;
     notifyListeners();
@@ -120,25 +130,36 @@ class TeacherProvider with ChangeNotifier {
   Future<void> addQuiz(TeacherQuiz quiz) async {
     try {
       await _quizService.addQuiz(quiz);
-      _quizzes.add(quiz);
-      notifyListeners();
     } catch (e) {
       debugPrint("Error adding quiz: $e");
     }
   }
 
-  void updateQuiz(TeacherQuiz quiz) {
-    final index = _quizzes.indexWhere((q) => q.id == quiz.id);
-    if (index != -1) {
-      _quizzes[index] = quiz;
+
+  Future<void> deleteQuiz(String quizId) async {
+    try {
+      await _quizService.deleteQuiz(quizId);  // Firestore delete
+      _quizzes.removeWhere((q) => q.id == quizId);  // Local state update
       notifyListeners();
+    } catch (e) {
+      debugPrint("Error deleting quiz: $e");
     }
   }
 
-  void deleteQuiz(String quizId) {
-    _quizzes.removeWhere((q) => q.id == quizId);
-    notifyListeners();
+
+  Future<void> updateQuiz(TeacherQuiz quiz) async {
+    try {
+      await _quizService.updateQuiz(quiz);  // Firestore update
+      final index = _quizzes.indexWhere((q) => q.id == quiz.id);
+      if (index != -1) {
+        _quizzes[index] = quiz;             // Local state update
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint("Error updating quiz: $e");
+    }
   }
+
 
   // Announcement Methods
   void addAnnouncement(TeacherAnnouncement announcement) {
@@ -183,6 +204,7 @@ class TeacherProvider with ChangeNotifier {
   @override
   void dispose() {
     _courseSubscription?.cancel();
+    _quizSubscription?.cancel();
     super.dispose();
   }
 }
