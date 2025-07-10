@@ -54,93 +54,84 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
                     // Filters Row
                     Column(
                       children: [
-                        // Course Filter
-                        // Expanded(
-                        //   child:
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Course:',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black87,
-                                ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Course:',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black87,
                               ),
-                              const SizedBox(height: 4),
-                              DropdownButtonFormField<String>(
-                                value: _selectedCourse,
-                                decoration: InputDecoration(
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.grey[100],
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            ),
+                            const SizedBox(height: 4),
+                            DropdownButtonFormField<String>(
+                              value: _selectedCourse,
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide.none,
                                 ),
-                                items: [
-                                  const DropdownMenuItem(
-                                    value: 'all',
-                                    child: Text('All Courses'),
-                                  ),
-                                  ...teacherProvider.courses.map((course) => DropdownMenuItem(
-                                    value: course.id,
-                                    child: Text(course.title),
-                                  )).toList(),
-                                ],
-                                onChanged: (value) {
-                                  setState(() {
-                                    _selectedCourse = value!;
-                                  });
-                                },
+                                filled: true,
+                                fillColor: Colors.grey[100],
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               ),
-                            ],
-                          ),
-                        // ),
-                        const SizedBox(width: 12),
-
-                        // Status Filter
-                        // Expanded(
-                        //   child:
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Status:',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black87,
+                              items: [
+                                const DropdownMenuItem(
+                                  value: 'all',
+                                  child: Text('All Courses'),
                                 ),
+                                ...teacherProvider.courses.map((course) => DropdownMenuItem(
+                                  value: course.id,
+                                  child: Text(course.title),
+                                )),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedCourse = value!;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Status:',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black87,
                               ),
-                              const SizedBox(height: 4),
-                              DropdownButtonFormField<String>(
-                                value: _selectedStatus,
-                                decoration: InputDecoration(
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.grey[100],
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            ),
+                            const SizedBox(height: 4),
+                            DropdownButtonFormField<String>(
+                              value: _selectedStatus,
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide.none,
                                 ),
-                                items: const [
-                                  DropdownMenuItem(value: 'all', child: Text('All Status')),
-                                  DropdownMenuItem(value: 'enrolled', child: Text('Enrolled')),
-                                  DropdownMenuItem(value: 'in_progress', child: Text('In Progress')),
-                                  DropdownMenuItem(value: 'completed', child: Text('Completed')),
-                                  DropdownMenuItem(value: 'dropped', child: Text('Dropped')),
-                                ],
-                                onChanged: (value) {
-                                  setState(() {
-                                    _selectedStatus = value!;
-                                  });
-                                },
+                                filled: true,
+                                fillColor: Colors.grey[100],
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               ),
-                            ],
-                          ),
-                        // ),
+                              items: const [
+                                DropdownMenuItem(value: 'all', child: Text('All Status')),
+                                DropdownMenuItem(value: 'enrolled', child: Text('Enrolled')),
+                                DropdownMenuItem(value: 'in_progress', child: Text('In Progress')),
+                                DropdownMenuItem(value: 'completed', child: Text('Completed')),
+                                DropdownMenuItem(value: 'dropped', child: Text('Dropped')),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedStatus = value!;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ],
@@ -197,53 +188,22 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
   }
 
   Widget _buildStudentList(TeacherProvider teacherProvider) {
-    List<StudentProgress> filteredStudents = teacherProvider.studentProgress;
-
-    // Filter by course
-    if (_selectedCourse != 'all') {
-      filteredStudents = filteredStudents.where((student) => student.courseId == _selectedCourse).toList();
-    }
-
-    // Filter by status
-    if (_selectedStatus != 'all') {
-      filteredStudents = filteredStudents.where((student) => student.status == _selectedStatus).toList();
-    }
-
-    // Filter by search query
-    if (_searchQuery.isNotEmpty) {
-      filteredStudents = filteredStudents.where((student) =>
-      student.studentName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          student.studentEmail.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
-    }
+    // Show only one specific student (e.g., by email)
+    List<StudentProgress> filteredStudents = teacherProvider.studentProgress.where(
+          (student) => student.studentEmail.toLowerCase() == 'ali.khan@gmail.com',
+    ).toList();
 
     if (filteredStudents.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.people_outline,
-              size: 64,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.people_outline, size: 64, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
-              _searchQuery.isEmpty ? 'No students found' : 'No students match your search',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _searchQuery.isEmpty
-                  ? 'Students will appear here once they enroll in your courses'
-                  : 'Try adjusting your search terms or filters',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[500],
-              ),
+              'No matching student found.\nCheck the email in _buildStudentList()',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
             ),
           ],
         ),
@@ -278,6 +238,8 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
         maxChildSize: 0.9,
         minChildSize: 0.5,
         builder: (context, scrollController) {
+          final sortedAttempts = [...student.quizAttempts]..sort((a, b) => b.attemptedAt.compareTo(a.attemptedAt));
+
           return Container(
             decoration: const BoxDecoration(
               color: Colors.white,
@@ -311,20 +273,8 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              student.studentName,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              student.studentEmail,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                              ),
-                            ),
+                            Text(student.studentName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                            Text(student.studentEmail, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
                           ],
                         ),
                       ),
@@ -367,13 +317,7 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Course Progress',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                              const Text('Course Progress', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                               const SizedBox(height: 12),
                               LinearProgressIndicator(
                                 value: student.progressPercentage / 100,
@@ -394,7 +338,7 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
 
                         const SizedBox(height: 20),
 
-                        // Stats Grid
+                        // Stats
                         GridView.count(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
@@ -412,17 +356,21 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
 
                         const SizedBox(height: 20),
 
-                        // Quiz Performance
-                        if (student.quizAttempts.isNotEmpty) ...[
-                          const Text(
-                            'Quiz Performance',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        // Last Quiz Summary
+                        if (sortedAttempts.isNotEmpty)
+                          _buildStatCard(
+                            'Last Quiz',
+                            '${sortedAttempts.first.quizTitle} - ${sortedAttempts.first.percentage.toStringAsFixed(1)}%',
+                            Icons.assignment_turned_in,
                           ),
+
+                        const SizedBox(height: 20),
+
+                        // Quiz Performance
+                        if (sortedAttempts.isNotEmpty) ...[
+                          const Text('Quiz Performance', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                           const SizedBox(height: 12),
-                          ...student.quizAttempts.map((attempt) => Container(
+                          ...sortedAttempts.map((attempt) => Container(
                             margin: const EdgeInsets.only(bottom: 8),
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
@@ -437,13 +385,11 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
                                   size: 20,
                                 ),
                                 const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(attempt.quizTitle),
-                                ),
+                                Expanded(child: Text(attempt.quizTitle)),
                                 Text('${attempt.percentage.toStringAsFixed(1)}%'),
                               ],
                             ),
-                          )).toList(),
+                          )),
                         ],
 
                         const SizedBox(height: 20),
@@ -472,20 +418,8 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
         children: [
           Icon(icon, size: 16, color: Colors.grey[600]),
           const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey[600],
-            ),
-          ),
+          Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+          Text(title, style: TextStyle(fontSize: 10, color: Colors.grey[600])),
         ],
       ),
     );
@@ -509,13 +443,8 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else {
-      return 'Just now';
-    }
+    if (difference.inDays > 0) return '${difference.inDays}d ago';
+    if (difference.inHours > 0) return '${difference.inHours}h ago';
+    return 'Just now';
   }
 }

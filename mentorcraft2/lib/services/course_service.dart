@@ -4,22 +4,22 @@ import '../teacher/models/teacher_course.dart';
 class CourseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Get all courses by teacher (with modules and lessons)
+  /// Get all courses by a specific teacher, including modules and lessons.
   Future<List<TeacherCourse>> getCoursesByTeacher(String teacherId) async {
     try {
-      final querySnapshot = await _firestore
+      final courseQuery = await _firestore
           .collection('courses')
           .where('teacherId', isEqualTo: teacherId)
           .get();
 
       List<TeacherCourse> courses = [];
 
-      for (var doc in querySnapshot.docs) {
-        final data = doc.data();
-        final courseId = doc.id;
+      for (var courseDoc in courseQuery.docs) {
+        final courseId = courseDoc.id;
+        final courseData = courseDoc.data();
 
-        // Fetch modules for this course
-        final moduleSnapshot = await _firestore
+        // Fetch modules
+        final moduleQuery = await _firestore
             .collection('courses')
             .doc(courseId)
             .collection('modules')
@@ -27,12 +27,12 @@ class CourseService {
 
         List<CourseModule> modules = [];
 
-        for (var moduleDoc in moduleSnapshot.docs) {
-          final moduleData = moduleDoc.data();
+        for (var moduleDoc in moduleQuery.docs) {
           final moduleId = moduleDoc.id;
+          final moduleData = moduleDoc.data();
 
-          // Fetch lessons for this module
-          final lessonSnapshot = await _firestore
+          // Fetch lessons
+          final lessonQuery = await _firestore
               .collection('courses')
               .doc(courseId)
               .collection('modules')
@@ -40,11 +40,10 @@ class CourseService {
               .collection('lessons')
               .get();
 
-          List<Lesson> lessons = lessonSnapshot.docs.map((l) {
-            final lData = l.data();
+          List<Lesson> lessons = lessonQuery.docs.map((lessonDoc) {
             return Lesson.fromJson({
-              'id': l.id,
-              ...lData,
+              'id': lessonDoc.id,
+              ...lessonDoc.data(),
             });
           }).toList();
 
@@ -57,7 +56,7 @@ class CourseService {
 
         courses.add(TeacherCourse.fromJson({
           'id': courseId,
-          ...data,
+          ...courseData,
           'modules': modules.map((m) => m.toJson()).toList(),
         }));
       }
@@ -69,7 +68,7 @@ class CourseService {
     }
   }
 
-  // Realtime listener
+  /// Listen to real-time updates for courses by teacher.
   Stream<List<TeacherCourse>> listenToCoursesByTeacher(String teacherId) {
     return _firestore
         .collection('courses')
@@ -78,11 +77,11 @@ class CourseService {
         .asyncMap((snapshot) async {
       List<TeacherCourse> courses = [];
 
-      for (var doc in snapshot.docs) {
-        final data = doc.data();
-        final courseId = doc.id;
+      for (var courseDoc in snapshot.docs) {
+        final courseId = courseDoc.id;
+        final courseData = courseDoc.data();
 
-        final moduleSnapshot = await _firestore
+        final moduleQuery = await _firestore
             .collection('courses')
             .doc(courseId)
             .collection('modules')
@@ -90,11 +89,11 @@ class CourseService {
 
         List<CourseModule> modules = [];
 
-        for (var moduleDoc in moduleSnapshot.docs) {
-          final moduleData = moduleDoc.data();
+        for (var moduleDoc in moduleQuery.docs) {
           final moduleId = moduleDoc.id;
+          final moduleData = moduleDoc.data();
 
-          final lessonSnapshot = await _firestore
+          final lessonQuery = await _firestore
               .collection('courses')
               .doc(courseId)
               .collection('modules')
@@ -102,11 +101,10 @@ class CourseService {
               .collection('lessons')
               .get();
 
-          List<Lesson> lessons = lessonSnapshot.docs.map((l) {
-            final lData = l.data();
+          List<Lesson> lessons = lessonQuery.docs.map((lessonDoc) {
             return Lesson.fromJson({
-              'id': l.id,
-              ...lData,
+              'id': lessonDoc.id,
+              ...lessonDoc.data(),
             });
           }).toList();
 
@@ -119,7 +117,7 @@ class CourseService {
 
         courses.add(TeacherCourse.fromJson({
           'id': courseId,
-          ...data,
+          ...courseData,
           'modules': modules.map((m) => m.toJson()).toList(),
         }));
       }
@@ -128,7 +126,7 @@ class CourseService {
     });
   }
 
-  // Add a new course
+  /// Add a new course to Firestore
   Future<void> addCourse(TeacherCourse course) async {
     try {
       final docRef = await _firestore.collection('courses').add(course.toJson());
@@ -139,7 +137,7 @@ class CourseService {
     }
   }
 
-  // Update course
+  /// Update an existing course
   Future<void> updateCourse(TeacherCourse course) async {
     try {
       await _firestore.collection('courses').doc(course.id).update(course.toJson());
@@ -148,7 +146,7 @@ class CourseService {
     }
   }
 
-  // Delete course
+  /// Delete a course by ID
   Future<void> deleteCourse(String courseId) async {
     try {
       await _firestore.collection('courses').doc(courseId).delete();
@@ -157,7 +155,7 @@ class CourseService {
     }
   }
 
-  // Toggle publish
+  /// Toggle the published status of a course
   Future<void> toggleCoursePublished(String courseId, bool isPublished) async {
     try {
       await _firestore.collection('courses').doc(courseId).update({
@@ -165,7 +163,7 @@ class CourseService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
     } catch (e) {
-      print('🔥 Error toggling publish: $e');
+      print('🔥 Error toggling course publish: $e');
     }
   }
 }

@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:mentorcraft2/teacher/provider/teacher_provider.dart';
 import '../../services/course_service.dart';
 import '../models/teacher_course.dart';
+import 'package:flutter/services.dart'; // for rootBundle
 
 class CreateCourseScreen extends StatefulWidget {
   const CreateCourseScreen({Key? key}) : super(key: key);
@@ -26,34 +27,6 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
   final _tagController = TextEditingController();
   File? _selectedImage;
   String? _uploadedImageUrl;
-
-  Future<void> _pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _selectedImage = File(pickedFile.path);
-      });
-    }
-  }
-
-  Future<String?> _uploadImage(File imageFile) async {
-    try {
-      final fileName = 'public/course_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final bucket = Supabase.instance.client.storage.from('mentorcraft-images');
-
-      await bucket.upload(fileName, imageFile);
-      final publicUrl = bucket.getPublicUrl(fileName);
-
-      setState(() {
-        _uploadedImageUrl = publicUrl;
-      });
-
-      return publicUrl;
-    } catch (e) {
-      print('Image upload failed: $e');
-      return null;
-    }
-  }
 
   final List<String> _categories = [
     'Mobile Development',
@@ -76,6 +49,105 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
     _durationController.dispose();
     _tagController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _selectedImage = File(pickedFile.path);
+      });
+    }
+  }
+
+  Future<String?> _uploadImage(File? imageFile) async {
+    try {
+      final fileName = 'public/course_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final bucket = Supabase.instance.client.storage.from('mentorcraft-images');
+
+      File fileToUpload;
+
+      if (imageFile != null) {
+        fileToUpload = imageFile;
+      } else {
+        // Load asset placeholder and save to temp file
+        final byteData = await rootBundle.load('assets/placeholder.jpg');
+        final tempDir = Directory.systemTemp;
+        fileToUpload = File('${tempDir.path}/placeholder.jpg');
+        await fileToUpload.writeAsBytes(byteData.buffer.asUint8List());
+      }
+
+      await bucket.upload(fileName, fileToUpload);
+      final publicUrl = bucket.getPublicUrl(fileName);
+
+      setState(() {
+        _uploadedImageUrl = publicUrl;
+      });
+
+      return publicUrl;
+    } catch (e) {
+      print('Image upload failed: $e');
+      return null;
+    }
+  }
+
+  void _saveDraft() {
+    if (_formKey.currentState?.validate() ?? false) {
+      _createCourse(false);
+    }
+  }
+
+  void _publishCourse() {
+    if (_formKey.currentState?.validate() ?? false) {
+      _createCourse(true);
+    }
+  }
+
+  void _createCourse(bool isPublished) async {
+    final teacherProvider = Provider.of<TeacherProvider>(context, listen: false);
+
+    final uploadedUrl = await _uploadImage(_selectedImage);
+    final imageUrl = uploadedUrl ?? '';
+
+    final course = TeacherCourse(
+      id: '',
+      title: _titleController.text,
+      description: _descriptionController.text,
+      category: _selectedCategory,
+      level: _selectedLevel,
+      price: double.tryParse(_priceController.text) ?? 0.0,
+      duration: _durationController.text,
+      imageUrl: imageUrl,
+      teacherId: teacherProvider.teacherId,
+      teacherName: teacherProvider.teacherName,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      isPublished: isPublished,
+      enrolledStudents: 0,
+      rating: 0.0,
+      totalRatings: 0,
+      modules: [],
+    );
+
+    try {
+      await CourseService().addCourse(course);
+      await teacherProvider.fetchCourses(teacherProvider.teacherId);
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Course ${isPublished ? 'published' : 'saved as draft'} successfully'),
+          backgroundColor: isPublished ? Colors.green : Colors.orange,
+        ),
+      );
+    } catch (e) {
+      print('Error creating course: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error creating course: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -193,8 +265,6 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
                   ),
                   child: _selectedImage != null
                       ? Image.file(_selectedImage!, fit: BoxFit.cover)
-                      : _uploadedImageUrl != null
-                      ? Image.network(_uploadedImageUrl!, fit: BoxFit.cover)
                       : const Center(child: Text('Tap to pick course image')),
                 ),
               ),
@@ -222,68 +292,5 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
         ),
       ),
     );
-  }
-
-  void _saveDraft() {
-    if (_formKey.currentState?.validate() ?? false) {
-      _createCourse(false);
-    }
-  }
-
-  void _publishCourse() {
-    if (_formKey.currentState?.validate() ?? false) {
-      _createCourse(true);
-    }
-  }
-
-  void _createCourse(bool isPublished) async {
-    final teacherProvider = Provider.of<TeacherProvider>(context, listen: false);
-
-    String imageUrl = _uploadedImageUrl ?? 'assets/course_placeholder.jpg';
-
-    if (_selectedImage != null && _uploadedImageUrl == null) {
-      final uploadedUrl = await _uploadImage(_selectedImage!);
-      if (uploadedUrl != null) imageUrl = uploadedUrl;
-    }
-
-    final course = TeacherCourse(
-      id: '',
-      title: _titleController.text,
-      description: _descriptionController.text,
-      category: _selectedCategory,
-      level: _selectedLevel,
-      price: double.tryParse(_priceController.text) ?? 0.0,
-      duration: _durationController.text,
-      imageUrl: imageUrl,
-      teacherId: teacherProvider.teacherId,
-      teacherName: teacherProvider.teacherName,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      isPublished: isPublished,
-      enrolledStudents: 0,
-      rating: 0.0,
-      totalRatings: 0,
-      modules: [],
-    );
-
-    try {
-      await CourseService().addCourse(course);
-      await teacherProvider.fetchCourses(teacherProvider.teacherId);
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Course ${isPublished ? 'published' : 'saved as draft'} successfully'),
-          backgroundColor: isPublished ? Colors.green : Colors.orange,
-        ),
-      );
-    } catch (e) {
-      print('Error creating course: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error creating course: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
   }
 }

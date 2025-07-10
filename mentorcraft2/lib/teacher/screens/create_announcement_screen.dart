@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:mentorcraft2/teacher/provider/teacher_provider.dart';
 import '../models/teacher_announcement.dart';
 import '../../theme/color.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // 🔸 Firestore import
 
 class CreateAnnouncementScreen extends StatefulWidget {
   const CreateAnnouncementScreen({Key? key}) : super(key: key);
@@ -51,7 +52,6 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Course Selection
                   DropdownButtonFormField<String>(
                     value: _selectedCourse.isEmpty ? null : _selectedCourse,
                     decoration: const InputDecoration(
@@ -78,7 +78,6 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Type Selection
                   DropdownButtonFormField<String>(
                     value: _selectedType,
                     decoration: const InputDecoration(
@@ -99,7 +98,6 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Title
                   TextFormField(
                     controller: _titleController,
                     decoration: const InputDecoration(
@@ -116,7 +114,6 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Content
                   TextFormField(
                     controller: _contentController,
                     maxLines: 6,
@@ -134,7 +131,6 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Options
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -175,7 +171,6 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
                   ),
                   const SizedBox(height: 32),
 
-                  // Action Buttons
                   Row(
                     children: [
                       if (!_publishImmediately) ...[
@@ -219,7 +214,7 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
     }
   }
 
-  void _createAnnouncementWithStatus(bool isPublished) {
+  Future<void> _createAnnouncementWithStatus(bool isPublished) async {
     final teacherProvider = Provider.of<TeacherProvider>(context, listen: false);
     final selectedCourse = teacherProvider.courses.firstWhere(
           (course) => course.id == _selectedCourse,
@@ -242,14 +237,42 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
       type: _selectedType,
     );
 
+    // Save to provider
     teacherProvider.addAnnouncement(announcement);
 
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Announcement ${isPublished ? 'published' : 'saved as draft'} successfully'),
-        backgroundColor: isPublished ? Colors.green : Colors.orange,
-      ),
-    );
+    try {
+      // 🔥 Save to Firestore
+      await FirebaseFirestore.instance.collection('announcements').doc(announcement.id).set({
+        'id': announcement.id,
+        'title': announcement.title,
+        'content': announcement.content,
+        'courseId': announcement.courseId,
+        'courseName': announcement.courseName,
+        'teacherId': announcement.teacherId,
+        'teacherName': announcement.teacherName,
+        'createdAt': announcement.createdAt.toIso8601String(),
+        'updatedAt': announcement.updatedAt.toIso8601String(),
+        'isUrgent': announcement.isUrgent,
+        'isPublished': announcement.isPublished,
+        'targetStudents': announcement.targetStudents,
+        'readCount': announcement.readCount,
+        'type': announcement.type,
+      });
+
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Announcement ${isPublished ? 'published' : 'saved as draft'} successfully'),
+          backgroundColor: isPublished ? Colors.green : Colors.orange,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error saving announcement to Firestore'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }

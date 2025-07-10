@@ -140,6 +140,10 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     final String userEmail = currentUser?.email ?? "No Email";
 
     return Scaffold(
+      appBar: AppBar(
+        title: Text('Profile'),
+        centerTitle: true,
+      ),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -234,7 +238,6 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                       child: GestureDetector(
                         onTap: _pickAndUploadImage,
                         child: Container(
-                          padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
                             color: AppColors.lightBlue,
                             shape: BoxShape.circle,

@@ -55,36 +55,32 @@ class AnnouncementCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              announcement.title,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
+                      Text(
+                        announcement.title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      if (announcement.isUrgent)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'URGENT',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                          if (announcement.isUrgent)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Text(
-                                'URGENT',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
+                        ),
+                      const SizedBox(height: 4),
                       Text(
                         announcement.courseName,
                         style: TextStyle(
@@ -138,32 +134,18 @@ class AnnouncementCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.visibility,
-                    size: 16,
-                    color: Colors.grey[600],
-                  ),
+                  Icon(Icons.visibility, size: 16, color: Colors.grey[600]),
                   const SizedBox(width: 4),
                   Text(
                     '${announcement.readCount} reads',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                   const SizedBox(width: 16),
-                  Icon(
-                    Icons.schedule,
-                    size: 16,
-                    color: Colors.grey[600],
-                  ),
+                  Icon(Icons.schedule, size: 16, color: Colors.grey[600]),
                   const SizedBox(width: 4),
                   Text(
                     _formatDate(announcement.createdAt),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                   const Spacer(),
                   Container(
@@ -197,7 +179,7 @@ class AnnouncementCard extends StatelessWidget {
                     label: const Text('Edit'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.blue,
-                      side: BorderSide(color: Colors.blue),
+                      side: const BorderSide(color: Colors.blue),
                     ),
                   ),
                 ),
@@ -209,22 +191,22 @@ class AnnouncementCard extends StatelessWidget {
                       announcement.isPublished ? Icons.unpublished : Icons.publish,
                       size: 16,
                     ),
-                    label: Text(announcement.isPublished ? 'Unpublish' : 'Publish'),
+                    label: Text(
+                      announcement.isPublished ? 'Unpublish' : 'Publish',
+                    ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: announcement.isPublished ? Colors.orange : Colors.green,
+                      backgroundColor:
+                      announcement.isPublished ? Colors.orange : Colors.green,
                       foregroundColor: Colors.white,
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
-                Container(
-                  width: 24,
-                  child: IconButton(
-                    onPressed: onDelete,
-                    icon: const Icon(Icons.delete),
-                    color: Colors.red,
-                    tooltip: 'Delete Announcement',
-                  ),
+                IconButton(
+                  onPressed: onDelete,
+                  icon: const Icon(Icons.delete),
+                  color: Colors.red,
+                  tooltip: 'Delete Announcement',
                 ),
               ],
             ),

@@ -87,7 +87,7 @@ class QuizCard extends StatelessWidget {
                 _buildDetailItem(Icons.help_outline, '${quiz.questions.length} Questions'),
                 _buildDetailItem(Icons.timer, '${quiz.timeLimit} minutes'),
                 _buildDetailItem(Icons.repeat, '${quiz.attempts} attempts'),
-                _buildDetailItem(Icons.grade, '${quiz.passingScore.toInt()}% to pass'),
+                _buildDetailItem(Icons.grade, '${quiz.passingPercentage.toInt()}% to pass'),
               ],
             ),
             const SizedBox(height: 12),
@@ -219,7 +219,7 @@ class QuizCard extends StatelessWidget {
     final descController = TextEditingController(text: quiz.description);
     final timeLimitController = TextEditingController(text: quiz.timeLimit.toString());
     final attemptsController = TextEditingController(text: quiz.attempts.toString());
-    final passingScoreController = TextEditingController(text: quiz.passingScore.toString());
+    final passingScoreController = TextEditingController(text: quiz.passingPercentage.toString());
 
     showModalBottomSheet(
       context: context,
@@ -269,7 +269,7 @@ class QuizCard extends StatelessWidget {
                       description: descController.text.trim(),
                       timeLimit: int.tryParse(timeLimitController.text.trim()) ?? quiz.timeLimit,
                       attempts: int.tryParse(attemptsController.text.trim()) ?? quiz.attempts,
-                      passingScore: double.tryParse(passingScoreController.text.trim()) ?? quiz.passingScore,
+                      passingPercentage: double.tryParse(passingScoreController.text.trim()) ?? quiz.passingPercentage,
                       updatedAt: DateTime.now(),
                     );
 

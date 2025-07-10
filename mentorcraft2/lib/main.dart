@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:mentorcraft2/app_wrapper.dart';
 import 'package:mentorcraft2/core/models/user_role.dart';
 import 'package:mentorcraft2/core/provider/theme_privider.dart';
 import 'package:mentorcraft2/student/student_main_app.dart';
@@ -117,7 +118,7 @@ class MentorCraftApp extends StatelessWidget {
           size: 24,
         ),
       ),
-      home: const StudentMainScreen(),
+      home: const AppWrapper(),
     );
   }
 }

@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:mentorcraft2/teacher/screens/teacher_profile_screen.dart';
 
 import 'package:mentorcraft2/theme/color.dart';
 import 'package:provider/provider.dart';
@@ -31,7 +32,9 @@ class SettingsScreen extends StatelessWidget {
                   'Manage Profile',
                   'Edit your personal information',
                   Icons.person_outline,
-                  onTap: () => Navigator.pushNamed(context, '/profile'),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (context){
+                    return ProfileScreen();
+                  })),
                 ),
               ],
             ),

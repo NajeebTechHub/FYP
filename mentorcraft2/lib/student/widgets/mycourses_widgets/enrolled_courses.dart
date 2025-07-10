@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../../models/enroll_courses.dart';
 import 'package:mentorcraft2/theme/color.dart';
 
@@ -16,7 +15,7 @@ class EnrolledCourseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+      margin: const EdgeInsets.symmetric(vertical: 8),
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -24,10 +23,8 @@ class EnrolledCourseCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Course Thumbnail with Progress Overlay
           Stack(
             children: [
-              // Thumbnail
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                 child: AspectRatio(
@@ -39,19 +36,13 @@ class EnrolledCourseCard extends StatelessWidget {
                       return Container(
                         color: Colors.grey[300],
                         child: const Center(
-                          child: Icon(
-                            Icons.image_not_supported,
-                            size: 40,
-                            color: Colors.grey,
-                          ),
+                          child: Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
                         ),
                       );
                     },
                   ),
                 ),
               ),
-
-              // Progress Indicator Overlay at the bottom of the image
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -62,21 +53,14 @@ class EnrolledCourseCard extends StatelessWidget {
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withOpacity(0.7),
-                      ],
+                      colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
                     ),
                   ),
                   child: Row(
                     children: [
                       Text(
                         '${(enrolledCourse.progress * 100).toInt()}% Complete',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -96,71 +80,40 @@ class EnrolledCourseCard extends StatelessWidget {
               ),
             ],
           ),
-
-          // Course Details
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Course Title
                 Text(
-                  enrolledCourse.course.teacherName,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
+                  enrolledCourse.course.title,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-
                 const SizedBox(height: 4),
-
-                // Instructor
                 Row(
                   children: [
-                    const Icon(
-                      Icons.person,
-                      size: 16,
-                      color: AppColors.textSecondary,
-                    ),
+                    const Icon(Icons.person, size: 16, color: AppColors.textSecondary),
                     const SizedBox(width: 4),
                     Text(
                       enrolledCourse.course.teacherName,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
-                      ),
+                      style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 4),
-
-                // Last Accessed
-                if (enrolledCourse.lastAccessedDate != null)
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.access_time,
-                        size: 16,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Last accessed: ${_formatDate(enrolledCourse.lastAccessedDate!)}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-
+                Row(
+                  children: [
+                    const Icon(Icons.access_time, size: 16, color: AppColors.textSecondary),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Last accessed: ${_formatDate(enrolledCourse.lastAccessedDate)}',
+                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 16),
-
-                // Continue Learning Button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -169,18 +122,10 @@ class EnrolledCourseCard extends StatelessWidget {
                       backgroundColor: AppColors.darkBlue,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       elevation: 0,
                     ),
-                    child: const Text(
-                      'Continue Learning',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    child: const Text('Continue Learning', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -191,7 +136,9 @@ class EnrolledCourseCard extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'Unknown';
     return '${date.day}/${date.month}/${date.year}';
   }
+
 }

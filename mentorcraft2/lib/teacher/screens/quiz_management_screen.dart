@@ -72,12 +72,12 @@ class _QuizManagementScreenState extends State<QuizManagementScreen> {
                       questions: quiz.questions,
                       timeLimit: quiz.timeLimit,
                       attempts: quiz.attempts,
-                      passingScore: quiz.passingScore,
                       createdAt: quiz.createdAt,
                       updatedAt: DateTime.now(),
                       isActive: !quiz.isActive,
                       totalSubmissions: quiz.totalSubmissions,
                       teacherId: quiz.teacherId,
+                      passingPercentage: quiz.passingPercentage,
                     );
                     teacherProvider.updateQuiz(updatedQuiz);
                   },

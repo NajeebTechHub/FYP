@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:mentorcraft2/teacher/provider/teacher_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/teacher_quiz.dart';
-import '../../theme/color.dart';
 
 class QuizSubmissionsScreen extends StatefulWidget {
   final TeacherQuiz quiz;
@@ -16,49 +14,54 @@ class QuizSubmissionsScreen extends StatefulWidget {
 class _QuizSubmissionsScreenState extends State<QuizSubmissionsScreen> {
   String _filterStatus = 'all';
   String _sortBy = 'date';
+  List<QuizSubmission> _submissions = [];
+  bool _isLoading = true;
 
-  // Sample submissions data
-  final List<QuizSubmission> _submissions = [
-    QuizSubmission(
-      id: 'sub1',
-      quizId: 'quiz1',
-      studentId: 'student_001',
-      studentName: 'John Doe',
-      studentEmail: 'john.doe@email.com',
-      answers: [],
-      score: 85.0,
-      percentage: 85.0,
-      submittedAt: DateTime.now().subtract(const Duration(hours: 2)),
-      timeSpent: 25,
-      passed: true,
-    ),
-    QuizSubmission(
-      id: 'sub2',
-      quizId: 'quiz1',
-      studentId: 'student_002',
-      studentName: 'Jane Smith',
-      studentEmail: 'jane.smith@email.com',
-      answers: [],
-      score: 65.0,
-      percentage: 65.0,
-      submittedAt: DateTime.now().subtract(const Duration(hours: 5)),
-      timeSpent: 30,
-      passed: false,
-    ),
-    QuizSubmission(
-      id: 'sub3',
-      quizId: 'quiz1',
-      studentId: 'student_003',
-      studentName: 'Mike Johnson',
-      studentEmail: 'mike.johnson@email.com',
-      answers: [],
-      score: 92.0,
-      percentage: 92.0,
-      submittedAt: DateTime.now().subtract(const Duration(days: 1)),
-      timeSpent: 20,
-      passed: true,
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadSubmissions();
+  }
+
+  void _loadSubmissions() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('quizzes')
+          .doc(widget.quiz.id)
+          .collection('submissions')
+          .get();
+
+      setState(() {
+        _submissions = snapshot.docs.map((doc) {
+          final data = doc.data();
+
+          final percentage = (data['percentage'] ?? 0).toDouble();
+          final passed = percentage >= widget.quiz.passingPercentage;
+
+          return QuizSubmission(
+            id: doc.id,
+            quizId: data['quizId'] ?? '',
+            studentId: data['studentId'] ?? '',
+            studentName: data['studentName'] ?? '',
+            studentEmail: data['email'] ?? '',
+            answers: (data['answers'] as List<dynamic>? ?? [])
+                .map((a) => StudentAnswer.fromJson(a as Map<String, dynamic>))
+                .toList(),
+            score: (data['score'] ?? 0).toDouble(),
+            percentage: percentage,
+            submittedAt: (data['submittedAt'] as Timestamp).toDate(),
+            timeSpent: data['timeSpent'] ?? 0,
+            passed: passed,
+          );
+        }).toList();
+
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading submissions: $e');
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +69,6 @@ class _QuizSubmissionsScreenState extends State<QuizSubmissionsScreen> {
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: Text('${widget.quiz.title} - Submissions'),
-        backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 0,
         actions: [
@@ -84,7 +86,9 @@ class _QuizSubmissionsScreenState extends State<QuizSubmissionsScreen> {
           ),
         ],
       ),
-      body: Column(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
         children: [
           // Stats and Filters
           Container(
@@ -92,7 +96,6 @@ class _QuizSubmissionsScreenState extends State<QuizSubmissionsScreen> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                // Stats Row
                 Row(
                   children: [
                     _buildStatCard('Total', _submissions.length.toString(), Colors.blue),
@@ -102,8 +105,6 @@ class _QuizSubmissionsScreenState extends State<QuizSubmissionsScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-
-                // Filter Chips
                 Row(
                   children: [
                     const Text('Filter: ', style: TextStyle(fontWeight: FontWeight.w500)),
@@ -129,8 +130,6 @@ class _QuizSubmissionsScreenState extends State<QuizSubmissionsScreen> {
               ],
             ),
           ),
-
-          // Submissions List
           Expanded(
             child: _buildSubmissionsList(),
           ),
@@ -150,21 +149,8 @@ class _QuizSubmissionsScreenState extends State<QuizSubmissionsScreen> {
         ),
         child: Column(
           children: [
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                color: color,
-              ),
-            ),
+            Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
+            Text(label, style: TextStyle(fontSize: 12, color: color)),
           ],
         ),
       ),
@@ -179,20 +165,9 @@ class _QuizSubmissionsScreenState extends State<QuizSubmissionsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.assignment_outlined,
-              size: 64,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.assignment_outlined, size: 64, color: Colors.grey[400]),
             const SizedBox(height: 16),
-            Text(
-              'No submissions found',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            Text('No submissions found', style: TextStyle(fontSize: 18, color: Colors.grey[600], fontWeight: FontWeight.w500)),
           ],
         ),
       );
@@ -201,10 +176,7 @@ class _QuizSubmissionsScreenState extends State<QuizSubmissionsScreen> {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: filteredSubmissions.length,
-      itemBuilder: (context, index) {
-        final submission = filteredSubmissions[index];
-        return _buildSubmissionCard(submission);
-      },
+      itemBuilder: (context, index) => _buildSubmissionCard(filteredSubmissions[index]),
     );
   }
 
@@ -228,7 +200,6 @@ class _QuizSubmissionsScreenState extends State<QuizSubmissionsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Student Info
             Row(
               children: [
                 CircleAvatar(
@@ -236,10 +207,7 @@ class _QuizSubmissionsScreenState extends State<QuizSubmissionsScreen> {
                   backgroundColor: Colors.blue.withOpacity(0.1),
                   child: Text(
                     submission.studentName.substring(0, 1).toUpperCase(),
-                    style: TextStyle(
-                      color: Colors.blue,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -248,18 +216,12 @@ class _QuizSubmissionsScreenState extends State<QuizSubmissionsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        submission.studentName,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        submission.studentName.toUpperCase(),
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        submission.studentEmail,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        submission.studentEmail.isNotEmpty ? submission.studentEmail : 'No email provided',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -272,19 +234,13 @@ class _QuizSubmissionsScreenState extends State<QuizSubmissionsScreen> {
                   ),
                   child: Text(
                     submission.passed ? 'PASSED' : 'FAILED',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
             ),
 
             const SizedBox(height: 16),
-
-            // Score Section
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -293,77 +249,13 @@ class _QuizSubmissionsScreenState extends State<QuizSubmissionsScreen> {
               ),
               child: Row(
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Score',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        Text(
-                          '${submission.percentage.toStringAsFixed(1)}%',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: submission.passed ? Colors.green : Colors.red,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Time Spent',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        Text(
-                          '${submission.timeSpent} min',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Submitted',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        Text(
-                          _formatDate(submission.submittedAt),
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _buildDetailColumn('Score', '${submission.percentage.toStringAsFixed(1)}%', submission.passed ? Colors.green : Colors.red),
+                  _buildDetailColumn('Time Spent', '${submission.timeSpent} min', Colors.black87),
+                  _buildDetailColumn('Submitted', _formatDate(submission.submittedAt), Colors.black87),
                 ],
               ),
             ),
-
             const SizedBox(height: 16),
-
-            // Actions
             Row(
               children: [
                 Expanded(
@@ -379,9 +271,7 @@ class _QuizSubmissionsScreenState extends State<QuizSubmissionsScreen> {
                     onPressed: () => _provideFeedback(submission),
                     icon: const Icon(Icons.comment, size: 16),
                     label: const Text('Feedback'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                    ),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
                   ),
                 ),
               ],
@@ -392,17 +282,27 @@ class _QuizSubmissionsScreenState extends State<QuizSubmissionsScreen> {
     );
   }
 
+  Widget _buildDetailColumn(String title, String value, Color color) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: color)),
+        ],
+      ),
+    );
+  }
+
   List<QuizSubmission> _getFilteredSubmissions() {
     List<QuizSubmission> filtered = List.from(_submissions);
 
-    // Apply status filter
     if (_filterStatus == 'passed') {
       filtered = filtered.where((s) => s.passed).toList();
     } else if (_filterStatus == 'failed') {
       filtered = filtered.where((s) => !s.passed).toList();
     }
 
-    // Apply sorting
     switch (_sortBy) {
       case 'score':
         filtered.sort((a, b) => b.percentage.compareTo(a.percentage));
@@ -419,6 +319,7 @@ class _QuizSubmissionsScreenState extends State<QuizSubmissionsScreen> {
 
   int _getPassedCount() => _submissions.where((s) => s.passed).length;
   int _getFailedCount() => _submissions.where((s) => !s.passed).length;
+
   double _getAverageScore() {
     if (_submissions.isEmpty) return 0.0;
     return _submissions.map((s) => s.percentage).reduce((a, b) => a + b) / _submissions.length;
@@ -438,15 +339,12 @@ class _QuizSubmissionsScreenState extends State<QuizSubmissionsScreen> {
               Text('Time Spent: ${submission.timeSpent} minutes'),
               Text('Status: ${submission.passed ? 'Passed' : 'Failed'}'),
               const SizedBox(height: 16),
-              const Text('Question-by-question breakdown would appear here in a real implementation.'),
+              const Text('Question-by-question breakdown would appear here.'),
             ],
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
         ],
       ),
     );
@@ -461,24 +359,15 @@ class _QuizSubmissionsScreenState extends State<QuizSubmissionsScreen> {
         title: Text('Feedback for ${submission.studentName}'),
         content: TextField(
           controller: feedbackController,
-          decoration: const InputDecoration(
-            hintText: 'Enter your feedback here...',
-            border: OutlineInputBorder(),
-          ),
+          decoration: const InputDecoration(hintText: 'Enter your feedback...', border: OutlineInputBorder()),
           maxLines: 4,
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () {
-              // In a real app, save feedback to backend
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Feedback sent successfully')),
-              );
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Feedback sent successfully')));
             },
             child: const Text('Send Feedback'),
           ),
@@ -496,13 +385,8 @@ class _QuizSubmissionsScreenState extends State<QuizSubmissionsScreen> {
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else {
-      return 'Just now';
-    }
+    if (difference.inDays > 0) return '${difference.inDays}d ago';
+    if (difference.inHours > 0) return '${difference.inHours}h ago';
+    return 'Just now';
   }
 }

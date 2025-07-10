@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/course.dart';
@@ -281,10 +282,13 @@ class _CoursesScreenState extends State<CoursesScreen> {
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => Container(
                       height: 120,
+                      width: double.infinity,
                       color: Colors.grey[300],
+                      alignment: Alignment.center,
                       child: const Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
                     ),
                   ),
+
                 ),
                 Positioned(
                   top: 8,
@@ -352,7 +356,56 @@ class _CoursesScreenState extends State<CoursesScreen> {
                   ),
                   const SizedBox(height: 12),
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () async {
+                      final price = course.price;
+                      final TextEditingController controller = TextEditingController();
+
+                      await showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text("Dummy Payment"),
+                          content: TextField(
+                            controller: controller,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: "Enter payment amount"),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text("Cancel"),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                final enteredAmount = double.tryParse(controller.text);
+                                if (enteredAmount == price) {
+                                  Navigator.pop(context); // close dialog
+                                  final uid = FirebaseAuth.instance.currentUser!.uid;
+
+                                  final courseDoc = FirebaseFirestore.instance.collection('courses').doc(course.id);
+
+                                  final enrolledUserRef = courseDoc.collection('enrolledUsers').doc(uid);
+                                  final alreadyEnrolled = await enrolledUserRef.get();
+
+                                  if (!alreadyEnrolled.exists) {
+                                    await enrolledUserRef.set({'enrolledAt': FieldValue.serverTimestamp()});
+                                    await courseDoc.update({'enrolledStudents': FieldValue.increment(1)});
+                                  }
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text("Enrollment successful")),
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text("Incorrect amount!")),
+                                  );
+                                }
+                              },
+                              child: const Text("Pay"),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.darkBlue,
                       minimumSize: const Size(double.infinity, 36),

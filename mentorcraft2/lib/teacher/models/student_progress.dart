@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class StudentProgress {
   final String id;
   final String studentId;
@@ -37,27 +39,35 @@ class StudentProgress {
     required this.timeSpent,
   });
 
-  factory StudentProgress.fromJson(Map<String, dynamic> json) {
+  factory StudentProgress.fromMap(Map<String, dynamic> map) {
     return StudentProgress(
-      id: json['id'] ?? '',
-      studentId: json['studentId'] ?? '',
-      studentName: json['studentName'] ?? '',
-      studentEmail: json['studentEmail'] ?? '',
-      studentAvatar: json['studentAvatar'] ?? '',
-      courseId: json['courseId'] ?? '',
-      courseName: json['courseName'] ?? '',
-      progressPercentage: (json['progressPercentage'] ?? 0.0).toDouble(),
-      enrolledAt: DateTime.parse(json['enrolledAt'] ?? DateTime.now().toIso8601String()),
-      lastAccessedAt: DateTime.parse(json['lastAccessedAt'] ?? DateTime.now().toIso8601String()),
-      totalLessons: json['totalLessons'] ?? 0,
-      completedLessons: json['completedLessons'] ?? 0,
-      lessonProgress: (json['lessonProgress'] as List?)?.map((l) => LessonProgress.fromJson(l)).toList() ?? [],
-      quizAttempts: (json['quizAttempts'] as List?)?.map((q) => QuizAttempt.fromJson(q)).toList() ?? [],
-      overallGrade: (json['overallGrade'] ?? 0.0).toDouble(),
-      status: json['status'] ?? 'enrolled',
-      timeSpent: json['timeSpent'] ?? 0,
+      id: map['id'] ?? '',
+      studentId: map['studentId'] ?? '',
+      studentName: map['studentName'] ?? '',
+      studentEmail: map['studentEmail'] ?? '',
+      studentAvatar: map['studentAvatar'] ?? '',
+      courseId: map['courseId'] ?? '',
+      courseName: map['courseName'] ?? '',
+      progressPercentage: (map['progressPercentage'] ?? 0.0).toDouble(),
+      enrolledAt: (map['enrolledAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      lastAccessedAt: (map['lastAccessedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      totalLessons: map['totalLessons'] ?? 0,
+      completedLessons: map['completedLessons'] ?? 0,
+      lessonProgress: (map['lessonProgress'] as List<dynamic>?)
+          ?.map((l) => LessonProgress.fromJson(l))
+          .toList() ??
+          [],
+      quizAttempts: (map['quizAttempts'] as List<dynamic>?)
+          ?.map((q) => QuizAttempt.fromJson(q))
+          .toList() ??
+          [],
+      overallGrade: (map['overallGrade'] ?? 0.0).toDouble(),
+      status: map['status'] ?? 'enrolled',
+      timeSpent: map['timeSpent'] ?? 0,
     );
   }
+
+
 
   Map<String, dynamic> toJson() {
     return {
@@ -104,7 +114,7 @@ class LessonProgress {
       lessonId: json['lessonId'] ?? '',
       lessonTitle: json['lessonTitle'] ?? '',
       isCompleted: json['isCompleted'] ?? false,
-      completedAt: json['completedAt'] != null ? DateTime.parse(json['completedAt']) : null,
+      completedAt: json['completedAt'] != null ? DateTime.tryParse(json['completedAt']) : null,
       timeSpent: json['timeSpent'] ?? 0,
       watchPercentage: (json['watchPercentage'] ?? 0.0).toDouble(),
     );
@@ -150,7 +160,7 @@ class QuizAttempt {
       score: (json['score'] ?? 0.0).toDouble(),
       percentage: (json['percentage'] ?? 0.0).toDouble(),
       passed: json['passed'] ?? false,
-      attemptedAt: DateTime.parse(json['attemptedAt'] ?? DateTime.now().toIso8601String()),
+      attemptedAt: json['attemptedAt'] != null ? DateTime.parse(json['attemptedAt']) : DateTime.now(),
       timeSpent: json['timeSpent'] ?? 0,
       attemptNumber: json['attemptNumber'] ?? 1,
     );

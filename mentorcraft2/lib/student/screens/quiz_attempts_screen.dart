@@ -1,146 +1,212 @@
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:mentorcraft2/theme/color.dart';
 import 'package:mentorcraft2/student/models/quiz_model.dart';
 
-class QuizAttemptScreen extends StatefulWidget {
+class QuizTakingScreen extends StatefulWidget {
   final TeacherQuiz quiz;
 
-  const QuizAttemptScreen({super.key, required this.quiz});
+  const QuizTakingScreen({Key? key, required this.quiz}) : super(key: key);
 
   @override
-  State<QuizAttemptScreen> createState() => _QuizAttemptScreenState();
+  State<QuizTakingScreen> createState() => _QuizTakingScreenState();
 }
 
-class _QuizAttemptScreenState extends State<QuizAttemptScreen> {
-  late int remainingSeconds;
-  late Timer timer;
-  int currentQuestionIndex = 0;
-  Map<String, String> selectedAnswers = {};
+class _QuizTakingScreenState extends State<QuizTakingScreen> {
+  late Timer _timer;
+  int _secondsLeft = 0;
+  int _score = 0;
+  bool _submitted = false;
+  Map<String, int> _selectedAnswers = {};
 
   @override
   void initState() {
     super.initState();
-    remainingSeconds = widget.quiz.timeLimit * 60;
-    startTimer();
+    _secondsLeft = widget.quiz.timeLimit * 60;
+    _startTimer();
   }
 
-  void startTimer() {
-    timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (remainingSeconds == 0) {
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_secondsLeft == 0) {
+        _submitQuiz();
         timer.cancel();
-        submitQuiz();
       } else {
         setState(() {
-          remainingSeconds--;
+          _secondsLeft--;
         });
       }
     });
   }
 
-  void submitQuiz() {
-    timer.cancel();
-    // Logic for scoring and navigating to result screen
-    Navigator.pop(context); // You can show result screen here
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Quiz submitted!")),
+  void _submitQuiz() async {
+    if (_submitted) return;
+
+    _timer.cancel();
+
+    final user = FirebaseAuth.instance.currentUser;
+    final studentName = user?.displayName ?? "Unknown";
+    final studentEmail = user?.email ?? "unknown@example.com";
+
+    int totalScore = 0;
+    Map<String, dynamic> answerDetails = {};
+
+    for (var q in widget.quiz.questions) {
+      String questionId = q['id'];
+      int correctIndex = q['correctAnswer'];
+      int? selected = _selectedAnswers[questionId];
+
+      bool isCorrect = selected != null && selected == correctIndex;
+      if (isCorrect) {
+        totalScore += (q['points'] as num?)?.toInt() ?? 0;
+      }
+
+      answerDetails[questionId] = {
+        'selectedOption': selected,
+        'isCorrect': isCorrect,
+      };
+    }
+
+    final int totalPoints = widget.quiz.questions.fold<int>(
+      0,
+          (sum, q) => sum + ((q['points'] as num?)?.toInt() ?? 0),
     );
+
+    final double percentage = totalPoints == 0 ? 0 : (totalScore / totalPoints) * 100;
+    final bool passed = percentage >= widget.quiz.passingScore;
+    final int timeSpent = (widget.quiz.timeLimit * 60) - _secondsLeft;
+
+    setState(() {
+      _score = totalScore;
+      _submitted = true;
+    });
+
+    try {
+      /// 🔄 Save submission in subcollection under the quiz
+      await FirebaseFirestore.instance
+          .collection('quizzes')
+          .doc(widget.quiz.id)
+          .collection('submissions')
+          .add({
+        'studentName': studentName,
+        'email': studentEmail,
+        'score': _score,
+        'percentage': percentage,
+        'timeSpent': timeSpent,
+        'submittedAt': FieldValue.serverTimestamp(),
+        'selectedAnswers': answerDetails,
+      });
+
+      /// 🔢 Increment total submissions
+      await FirebaseFirestore.instance
+          .collection('quizzes')
+          .doc(widget.quiz.id)
+          .update({
+        'totalSubmissions': FieldValue.increment(1),
+      });
+
+      _showResultDialog(passed, percentage);
+    } catch (e) {
+      debugPrint('Submission error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Submission failed. Try again.')),
+      );
+    }
+  }
+
+  void _showResultDialog(bool passed, double percentage) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(passed ? 'Quiz Passed!' : 'Quiz Failed'),
+        content: Text('Your score is $_score (${percentage.toStringAsFixed(2)}%)'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimer() {
+    final minutes = (_secondsLeft ~/ 60).toString().padLeft(2, '0');
+    final seconds = (_secondsLeft % 60).toString().padLeft(2, '0');
+    return Text('Time Left: $minutes:$seconds',
+        style: const TextStyle(fontSize: 16, color: Colors.red));
   }
 
   @override
   void dispose() {
-    timer.cancel();
+    _timer.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final question = widget.quiz.questions[currentQuestionIndex];
-
-    List<dynamic> options = question['options'] ?? [];
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Quiz in Progress'),
+        title: Text(widget.quiz.title),
         actions: [
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Chip(
-              label: Text(
-                formatTime(remainingSeconds),
-                style: const TextStyle(color: Colors.white),
-              ),
-              backgroundColor: AppColors.primary,
-            ),
-          ),
+          Padding(padding: const EdgeInsets.all(16.0), child: _buildTimer())
         ],
       ),
-      body: Padding(
+      body: ListView.builder(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Text(
-              'Q${currentQuestionIndex + 1}: ${question['question']}',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        itemCount: widget.quiz.questions.length,
+        itemBuilder: (context, index) {
+          final question = widget.quiz.questions[index];
+          final options = (question['options'] as List<dynamic>).cast<String>();
+          return Card(
+            margin: const EdgeInsets.only(bottom: 16),
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Q${index + 1}: ${question['question']}',
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  ...List.generate(options.length, (optIndex) {
+                    return RadioListTile<int>(
+                      title: Text(options[optIndex]),
+                      value: optIndex,
+                      groupValue: _selectedAnswers[question['id']],
+                      onChanged: _submitted
+                          ? null
+                          : (value) {
+                        setState(() {
+                          _selectedAnswers[question['id']] = value!;
+                        });
+                      },
+                    );
+                  }),
+                ],
+              ),
             ),
-            const SizedBox(height: 16),
-            ...List.generate(options.length, (index) {
-              final optText = options[index];
-              final optKey = index.toString();
-              final selected = selectedAnswers[question['id']] == optKey;
-
-              return ListTile(
-                title: Text(optText),
-                leading: Radio<String>(
-                  value: optKey,
-                  groupValue: selectedAnswers[question['id']],
-                  onChanged: (val) {
-                    setState(() {
-                      selectedAnswers[question['id']] = val!;
-                    });
-                  },
-                ),
-              );
-            }),
-            const Spacer(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                if (currentQuestionIndex > 0)
-                  ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        currentQuestionIndex--;
-                      });
-                    },
-                    child: const Text('Previous'),
-                  ),
-                if (currentQuestionIndex < widget.quiz.questions.length - 1)
-                  ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        currentQuestionIndex++;
-                      });
-                    },
-                    child: const Text('Next'),
-                  )
-                else
-                  ElevatedButton(
-                    onPressed: submitQuiz,
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                    child: const Text('Submit'),
-                  ),
-              ],
-            )
-          ],
-        ),
+          );
+        },
       ),
+      bottomNavigationBar: !_submitted
+          ? Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: ElevatedButton(
+          onPressed: _submitQuiz,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8)),
+          ),
+          child: const Text('Submit Quiz',
+              style: TextStyle(color: Colors.white)),
+        ),
+      )
+          : null,
     );
-  }
-
-  String formatTime(int seconds) {
-    final m = (seconds ~/ 60).toString().padLeft(2, '0');
-    final s = (seconds % 60).toString().padLeft(2, '0');
-    return '$m:$s';
   }
 }

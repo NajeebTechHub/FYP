@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class TeacherQuiz {
   final String id;
   final String title;
@@ -7,7 +9,7 @@ class TeacherQuiz {
   final List<QuizQuestion> questions;
   final int timeLimit;
   final int attempts;
-  final double passingScore;
+  final double passingPercentage;
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool isActive;
@@ -23,7 +25,7 @@ class TeacherQuiz {
     required this.questions,
     required this.timeLimit,
     required this.attempts,
-    required this.passingScore,
+    required this.passingPercentage,
     required this.createdAt,
     required this.updatedAt,
     required this.isActive,
@@ -38,17 +40,14 @@ class TeacherQuiz {
       description: json['description'] ?? '',
       courseId: json['courseId'] ?? '',
       courseName: json['courseName'] ?? '',
-      questions: (json['questions'] as List<dynamic>?)
-          ?.map((q) => QuizQuestion.fromJson(q))
-          .toList() ??
-          [],
+      questions: (json['questions'] as List<dynamic>? ?? [])
+          .map((q) => QuizQuestion.fromJson(q))
+          .toList(),
       timeLimit: json['timeLimit'] ?? 60,
       attempts: json['attempts'] ?? 3,
-      passingScore: (json['passingScore'] ?? 70.0).toDouble(),
-      createdAt: DateTime.parse(
-          json['createdAt'] ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(
-          json['updatedAt'] ?? DateTime.now().toIso8601String()),
+      passingPercentage: (json['passingPercentage'] ?? 70.0).toDouble(),
+      createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
+      updatedAt: DateTime.parse(json['updatedAt'] ?? DateTime.now().toIso8601String()),
       isActive: json['isActive'] ?? true,
       totalSubmissions: json['totalSubmissions'] ?? 0,
       teacherId: json['teacherId'] ?? '',
@@ -65,7 +64,7 @@ class TeacherQuiz {
       'questions': questions.map((q) => q.toJson()).toList(),
       'timeLimit': timeLimit,
       'attempts': attempts,
-      'passingScore': passingScore,
+      'passingPercentage': passingPercentage,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'isActive': isActive,
@@ -83,7 +82,7 @@ class TeacherQuiz {
     List<QuizQuestion>? questions,
     int? timeLimit,
     int? attempts,
-    double? passingScore,
+    double? passingPercentage,
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isActive,
@@ -99,7 +98,7 @@ class TeacherQuiz {
       questions: questions ?? this.questions,
       timeLimit: timeLimit ?? this.timeLimit,
       attempts: attempts ?? this.attempts,
-      passingScore: passingScore ?? this.passingScore,
+      passingPercentage: passingPercentage ?? this.passingPercentage,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isActive: isActive ?? this.isActive,
@@ -108,6 +107,7 @@ class TeacherQuiz {
     );
   }
 }
+
 
 class QuizQuestion {
   final String id;
@@ -176,20 +176,19 @@ class QuizSubmission {
     required this.passed,
   });
 
-  factory QuizSubmission.fromJson(Map<String, dynamic> json) {
+  factory QuizSubmission.fromJson(Map<String, dynamic> json, String id) {
     return QuizSubmission(
-      id: json['id'] ?? '',
+      id: id,
       quizId: json['quizId'] ?? '',
       studentId: json['studentId'] ?? '',
       studentName: json['studentName'] ?? '',
       studentEmail: json['studentEmail'] ?? '',
-      answers: (json['answers'] as List<dynamic>?)
-          ?.map((a) => StudentAnswer.fromJson(a))
-          .toList() ??
-          [],
-      score: (json['score'] ?? 0.0).toDouble(),
-      percentage: (json['percentage'] ?? 0.0).toDouble(),
-      submittedAt: DateTime.parse(json['submittedAt'] ?? DateTime.now().toIso8601String()),
+      answers: (json['answers'] as List<dynamic>? ?? [])
+          .map((a) => StudentAnswer.fromJson(a as Map<String, dynamic>))
+          .toList(),
+      score: (json['score'] ?? 0).toDouble(),
+      percentage: (json['percentage'] ?? 0).toDouble(),
+      submittedAt: (json['submittedAt'] as Timestamp).toDate(),
       timeSpent: json['timeSpent'] ?? 0,
       passed: json['passed'] ?? false,
     );
@@ -211,6 +210,8 @@ class QuizSubmission {
     };
   }
 }
+
+
 
 class StudentAnswer {
   final String questionId;
@@ -243,3 +244,4 @@ class StudentAnswer {
     };
   }
 }
+

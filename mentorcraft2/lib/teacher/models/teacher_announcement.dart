@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class TeacherAnnouncement {
   final String id;
   final String title;
@@ -31,6 +33,88 @@ class TeacherAnnouncement {
     required this.type,
   });
 
+  TeacherAnnouncement copyWith({
+    String? id,
+    String? title,
+    String? content,
+    String? courseId,
+    String? courseName,
+    String? teacherId,
+    String? teacherName,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    bool? isUrgent,
+    bool? isPublished,
+    List<String>? targetStudents,
+    int? readCount,
+    String? type,
+  }) {
+    return TeacherAnnouncement(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      courseId: courseId ?? this.courseId,
+      courseName: courseName ?? this.courseName,
+      teacherId: teacherId ?? this.teacherId,
+      teacherName: teacherName ?? this.teacherName,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      isUrgent: isUrgent ?? this.isUrgent,
+      isPublished: isPublished ?? this.isPublished,
+      targetStudents: targetStudents ?? List<String>.from(this.targetStudents),
+      readCount: readCount ?? this.readCount,
+      type: type ?? this.type,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'content': content,
+      'courseId': courseId,
+      'courseName': courseName,
+      'teacherId': teacherId,
+      'teacherName': teacherName,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': Timestamp.fromDate(updatedAt),
+      'isUrgent': isUrgent,
+      'isPublished': isPublished,
+      'targetStudents': targetStudents,
+      'readCount': readCount,
+      'type': type,
+    };
+  }
+
+
+
+  /// 🔁 Factory method for Firestore data
+  factory TeacherAnnouncement.fromMap(Map<String, dynamic> map, String id) {
+    return TeacherAnnouncement(
+      id: map['id'] ?? '',
+      title: map['title'] ?? '',
+      content: map['content'] ?? '',
+      courseId: map['courseId'] ?? '',
+      courseName: map['courseName'] ?? '',
+      teacherId: map['teacherId'] ?? '',
+      teacherName: map['teacherName'] ?? '',
+      createdAt: (map['createdAt'] is Timestamp)
+          ? (map['createdAt'] as Timestamp).toDate()
+          : DateTime.tryParse(map['createdAt']?.toString() ?? '') ?? DateTime.now(),
+      updatedAt: (map['updatedAt'] is Timestamp)
+          ? (map['updatedAt'] as Timestamp).toDate()
+          : DateTime.tryParse(map['updatedAt']?.toString() ?? '') ?? DateTime.now(),
+      isUrgent: map['isUrgent'] ?? false,
+      isPublished: map['isPublished'] ?? true,
+      targetStudents: (map['targetStudents'] is List)
+          ? List<String>.from(map['targetStudents'])
+          : [],
+      readCount: map['readCount'] ?? 0,
+      type: map['type'] ?? 'general',
+    );
+  }
+
+  /// 🔁 Factory method for JSON (e.g., APIs, local files)
   factory TeacherAnnouncement.fromJson(Map<String, dynamic> json) {
     return TeacherAnnouncement(
       id: json['id'] ?? '',
@@ -40,11 +124,13 @@ class TeacherAnnouncement {
       courseName: json['courseName'] ?? '',
       teacherId: json['teacherId'] ?? '',
       teacherName: json['teacherName'] ?? '',
-      createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(json['updatedAt'] ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updatedAt'] ?? '') ?? DateTime.now(),
       isUrgent: json['isUrgent'] ?? false,
       isPublished: json['isPublished'] ?? true,
-      targetStudents: List<String>.from(json['targetStudents'] ?? []),
+      targetStudents: (json['targetStudents'] is List)
+          ? List<String>.from(json['targetStudents'])
+          : [],
       readCount: json['readCount'] ?? 0,
       type: json['type'] ?? 'general',
     );

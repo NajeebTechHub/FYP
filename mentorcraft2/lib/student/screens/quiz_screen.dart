@@ -160,7 +160,7 @@ class QuizScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => QuizAttemptScreen(quiz: quiz),
+                        builder: (_) => QuizTakingScreen(quiz: quiz,),
                       ),
                     );
 

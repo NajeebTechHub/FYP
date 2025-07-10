@@ -50,26 +50,24 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (course.imageUrl.isNotEmpty)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  course.imageUrl,
-                  width: double.infinity,
-                  height: 200,
-                  fit: BoxFit.cover,
-                ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: (course.imageUrl.isNotEmpty &&
+                  course.imageUrl.startsWith('http'))
+                  ? Image.network(
+                course.imageUrl,
+                width: double.infinity,
+                height: 200,
+                fit: BoxFit.cover,
               )
-            else
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  'assets/11.png',
-                  width: double.infinity,
-                  height: 200,
-                  fit: BoxFit.cover,
-                ),
+                  : Image.asset(
+                'assets/placeholder.jpg',
+                width: double.infinity,
+                height: 200,
+                fit: BoxFit.cover,
               ),
+            ),
+
 
             const SizedBox(height: 16),
             Text(course.title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),

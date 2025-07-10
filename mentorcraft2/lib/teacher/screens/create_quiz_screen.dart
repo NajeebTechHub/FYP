@@ -17,7 +17,7 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
   final _descriptionController = TextEditingController();
   final _timeLimitController = TextEditingController(text: '30');
   final _attemptsController = TextEditingController(text: '3');
-  final _passingScoreController = TextEditingController(text: '70');
+  final _passingPercentageController = TextEditingController(text: '70');
 
   String? _selectedCourse;
   List<QuizQuestion> _questions = [];
@@ -35,7 +35,7 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
     _descriptionController.dispose();
     _timeLimitController.dispose();
     _attemptsController.dispose();
-    _passingScoreController.dispose();
+    _passingPercentageController.dispose();
     super.dispose();
   }
 
@@ -107,7 +107,7 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
                       const SizedBox(width: 8),
                       _numberField(controller: _attemptsController, label: 'Attempts'),
                       const SizedBox(width: 8),
-                      _numberField(controller: _passingScoreController, label: 'Passing %'),
+                      _numberField(controller: _passingPercentageController, label: 'Passing %'),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -212,7 +212,7 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
           content: SingleChildScrollView(
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.7, // Adjust if needed
+                maxHeight: MediaQuery.of(context).size.height * 0.7,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -255,7 +255,6 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
               ),
             ),
           ),
-
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
             ElevatedButton(
@@ -302,7 +301,7 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
       questions: _questions,
       timeLimit: int.parse(_timeLimitController.text),
       attempts: int.parse(_attemptsController.text),
-      passingScore: double.parse(_passingScoreController.text),
+      passingPercentage: double.parse(_passingPercentageController.text),
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       isActive: isActive,
