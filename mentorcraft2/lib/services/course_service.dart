@@ -77,10 +77,11 @@ class CourseService {
         .asyncMap((snapshot) async {
       List<TeacherCourse> courses = [];
 
-      for (var courseDoc in snapshot.docs) {
-        final courseId = courseDoc.id;
-        final courseData = courseDoc.data();
+      for (var doc in snapshot.docs) {
+        final courseId = doc.id;
+        final data = doc.data();
 
+        // Fetch modules
         final moduleQuery = await _firestore
             .collection('courses')
             .doc(courseId)
@@ -93,6 +94,7 @@ class CourseService {
           final moduleId = moduleDoc.id;
           final moduleData = moduleDoc.data();
 
+          // Fetch lessons
           final lessonQuery = await _firestore
               .collection('courses')
               .doc(courseId)
@@ -117,7 +119,7 @@ class CourseService {
 
         courses.add(TeacherCourse.fromJson({
           'id': courseId,
-          ...courseData,
+          ...data,
           'modules': modules.map((m) => m.toJson()).toList(),
         }));
       }
@@ -125,6 +127,7 @@ class CourseService {
       return courses;
     });
   }
+
 
   /// Add a new course to Firestore
   Future<void> addCourse(TeacherCourse course) async {
@@ -166,4 +169,38 @@ class CourseService {
       print('🔥 Error toggling course publish: $e');
     }
   }
+
+  void markLessonAsComplete({
+    required String courseId,
+    required String userId,
+    required String lessonId,
+    required int totalLessons,
+  }) async {
+    final docRef = FirebaseFirestore.instance
+        .collection('courses')
+        .doc(courseId)
+        .collection('enrolledUsers')
+        .doc(userId);
+
+    final doc = await docRef.get();
+
+    List<dynamic> completed = [];
+
+    if (doc.exists && doc.data()?['completedLessons'] != null) {
+      completed = List.from(doc['completedLessons']);
+    }
+
+    if (!completed.contains(lessonId)) {
+      completed.add(lessonId);
+    }
+
+    double progress = (completed.length / totalLessons) * 100;
+
+    await docRef.set({
+      'completedLessons': completed,
+      'progress': progress,
+      'lastAccessedDate': Timestamp.now(),
+    }, SetOptions(merge: true));
+  }
+
 }

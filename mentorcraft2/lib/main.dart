@@ -13,6 +13,7 @@ import 'auth/simple_auth_provider.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'theme/color.dart';
+import 'student/screens/certificate_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -167,8 +168,6 @@ class AuthenticationWrapper extends StatelessWidget {
     );
   }
 }
-
-
 
 class StudentAppDrawer extends StatelessWidget {
   final int currentIndex;

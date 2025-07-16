@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/models/user_role.dart';
 import '../models/app_user.dart';
 
 class AuthService {
@@ -33,7 +34,7 @@ class AuthService {
 
         // Create user document in Firestore
         final appUser = AppUser(
-          uid: user.uid,
+          id: user.uid,
           email: email,
           displayName: displayName,
           role: role,

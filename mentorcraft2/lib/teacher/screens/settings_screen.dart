@@ -1,4 +1,5 @@
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:mentorcraft2/teacher/screens/teacher_profile_screen.dart';
 
@@ -8,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../../auth/simple_auth_provider.dart';
 import '../../core/models/user_role.dart';
 import '../../screens/auth/login_screen.dart';
+import '../provider/teacher_provider.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -275,6 +277,10 @@ class SettingsScreen extends StatelessWidget {
                       // Perform logout
                       final authProvider = Provider.of<SimpleAuthProvider>(context, listen: false);
                       await authProvider.signOut();
+
+                      await FirebaseAuth.instance.signOut();
+                      Provider.of<TeacherProvider>(context, listen: false).clearData();
+
 
                       // Navigate to LoginScreen
                       Navigator.of(context).pushAndRemoveUntil(

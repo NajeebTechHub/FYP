@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mentorcraft2/core/provider/auth_provider.dart';
 import 'package:mentorcraft2/teacher/provider/teacher_provider.dart';
+import '../../auth/auth_provider.dart';
 import '../../theme/color.dart';
 
 class TeacherDrawer extends StatelessWidget {
@@ -12,7 +13,7 @@ class TeacherDrawer extends StatelessWidget {
     return Drawer(
       child: Consumer2<AuthProvider, TeacherProvider>(
         builder: (context, authProvider, teacherProvider, child) {
-          final user = authProvider.currentUser;
+          final user = authProvider.user;
           final stats = teacherProvider.dashboardStats;
 
           return Column(
@@ -31,12 +32,12 @@ class TeacherDrawer extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 35,
-                      backgroundImage: AssetImage(user?.avatar ?? 'assets/default_avatar.png'),
+                      // backgroundImage: AssetImage(user?.avatar ?? 'assets/default_avatar.png'),
                       backgroundColor: Colors.white,
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      user?.name ?? 'Teacher',
+                      user?.displayName ?? 'Teacher',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
@@ -278,7 +279,7 @@ class TeacherDrawer extends StatelessWidget {
             ),
             ElevatedButton(
               onPressed: () {
-                authProvider.logout();
+                authProvider.signOut();
                 Navigator.of(context).pop();
                 Navigator.pushReplacementNamed(context, '/login');
               },

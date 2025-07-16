@@ -155,6 +155,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     createdAt: DateTime.now(),
                     updatedAt: DateTime.now(),
                     enrolledStudents: 0,
+                    modules: [],
                   ),
                 ),
               );

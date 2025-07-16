@@ -23,8 +23,8 @@ class AnnouncementCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
+            color: Colors.grey.withOpacity(0.2),
+            spreadRadius: 3,
             blurRadius: 6,
             offset: const Offset(0, 3),
           ),
@@ -201,12 +201,15 @@ class AnnouncementCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: onDelete,
-                  icon: const Icon(Icons.delete),
-                  color: Colors.red,
-                  tooltip: 'Delete Announcement',
+                const SizedBox(width: 5),
+                Container(
+                  width: 25,
+                  child: IconButton(
+                    onPressed: onDelete,
+                    icon: const Icon(Icons.delete),
+                    color: Colors.red,
+                    tooltip: 'Delete Announcement',
+                  ),
                 ),
               ],
             ),

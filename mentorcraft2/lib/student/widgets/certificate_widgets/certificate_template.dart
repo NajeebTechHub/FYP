@@ -85,9 +85,9 @@ class CertificateTemplate extends StatelessWidget {
                 const Text(
                   'CERTIFICATE OF COMPLETION',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    letterSpacing: 2,
+                    letterSpacing: 0,
                     color: AppColors.primary,
                   ),
                 ),
@@ -188,90 +188,103 @@ class CertificateTemplate extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Column(
-                      children: [
-                        // Fake signature
-                        Text(
-                          instructor,
-                          style: const TextStyle(
-                            fontFamily: 'cursive',
-                            fontSize: 16,
-                            color: Colors.black87,
-                            fontStyle: FontStyle.italic,
+                    Flexible(
+                      child: Column(
+                        children: [
+                          Text(
+                            instructor,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontFamily: 'cursive',
+                              fontSize: 16,
+                              color: Colors.black87,
+                              fontStyle: FontStyle.italic,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          width: 100,
-                          height: 1,
-                          color: Colors.black45,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Course Instructor',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade700,
+                          const SizedBox(height: 4),
+                          Container(
+                            width: 100,
+                            height: 1,
+                            color: Colors.black45,
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          Text(
+                            'Course Instructor',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(width: 20),
-                    Column(
-                      children: [
-                        // Fake signature
-                        const Text(
-                          'Dr. James Wilson',
-                          style: TextStyle(
-                            fontFamily: 'cursive',
-                            fontSize: 16,
-                            color: Colors.black87,
-                            fontStyle: FontStyle.italic,
+                    Flexible(
+                      child: Column(
+                        children: [
+                          const Text(
+                            'Engr. Najeeb Anjum',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: 'cursive',
+                              fontSize: 16,
+                              color: Colors.black87,
+                              fontStyle: FontStyle.italic,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          width: 100,
-                          height: 1,
-                          color: Colors.black45,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'MentorCraft Director',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade700,
+                          const SizedBox(height: 4),
+                          Container(
+                            width: 100,
+                            height: 1,
+                            color: Colors.black45,
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          Text(
+                            'MentorCraft Director',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
+
               ],
             ),
           ),
 
           // Footer
           Padding(
-            padding: EdgeInsets.only(top: 16,left: 0),
+            padding: const EdgeInsets.only(top: 16),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
+                const Icon(
                   Icons.verified,
                   size: 15,
                   color: AppColors.primary,
                 ),
                 const SizedBox(width: 5),
-                Text(
-                  'Verify this certificate at mentorcraft.com/verify',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey.shade600,
+                Expanded(
+                  child: Text(
+                    'Verify this certificate at mentorcraft.com/verify',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
           ),
+
         ],
       ),
     );

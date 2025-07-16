@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 enum CertificateStatus {
@@ -145,4 +146,38 @@ class Certificate {
       ),
     ];
   }
+
+  factory Certificate.fromFirestore(String id, Map<String, dynamic> data) {
+    return Certificate(
+      id: id,
+      courseId: data['courseId'] ?? '',
+      courseName: data['courseName'] ?? '',
+      instructor: data['instructor'] ?? '',
+      issueDate: (data['issueDate'] as Timestamp).toDate(),
+      completionDate: (data['completionDate'] as Timestamp).toDate(),
+      category: data['category'] ?? '',
+      description: data['description'] ?? '',
+      imageUrl: data['imageUrl'] ?? '',
+      status: _parseStatus(data['status']),
+      courseRating: (data['courseRating'] as num).toDouble(),
+      courseDurationHours: data['courseDurationHours'] ?? 0,
+      skills: List<String>.from(data['skills'] ?? []),
+    );
+  }
+
+  static CertificateStatus _parseStatus(String? status) {
+    switch (status) {
+      case 'issued':
+        return CertificateStatus.issued;
+      case 'downloaded':
+        return CertificateStatus.downloaded;
+      case 'shared':
+        return CertificateStatus.shared;
+      case 'pending':
+        return CertificateStatus.pending;
+      default:
+        return CertificateStatus.issued;
+    }
+  }
+
 }

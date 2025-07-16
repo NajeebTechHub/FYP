@@ -7,10 +7,11 @@ import '../widgets/certificate_widgets/certificate_template.dart';
 
 class CertificatePreviewScreen extends StatelessWidget {
   final Certificate certificate;
+  final String studentName;
 
   const CertificatePreviewScreen({
     Key? key,
-    required this.certificate,
+    required this.certificate, required this.studentName,
   }) : super(key: key);
 
   @override
@@ -55,7 +56,7 @@ class CertificatePreviewScreen extends StatelessWidget {
               // Certificate preview
               CertificateTemplate(
                 courseName: certificate.courseName,
-                studentName: 'John Doe', // Replace with actual user name
+                studentName: studentName,
                 issueDate: formattedDate,
                 certificateId: certificate.id,
                 instructor: certificate.instructor,

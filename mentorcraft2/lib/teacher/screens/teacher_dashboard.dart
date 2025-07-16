@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:mentorcraft2/teacher/provider/teacher_provider.dart';
-import '../models/teacher_announcement.dart';
 import '../../theme/color.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/earnings_chart.dart';
@@ -15,10 +13,21 @@ class TeacherDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
-
       body: Consumer<TeacherProvider>(
         builder: (context, teacherProvider, child) {
           final stats = teacherProvider.dashboardStats;
+
+          final teacherName = teacherProvider.teacherName.isNotEmpty
+              ? teacherProvider.teacherName
+              : 'Instructor';
+
+          final avatarPath = teacherProvider.teacherAvatar.isNotEmpty
+              ? teacherProvider.teacherAvatar
+              : 'assets/placeholder.jpg';
+
+          final avatarWidget = avatarPath.startsWith('http')
+              ? NetworkImage(avatarPath)
+              : AssetImage(avatarPath) as ImageProvider;
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
@@ -40,7 +49,7 @@ class TeacherDashboard extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: 30,
-                        backgroundImage: AssetImage(teacherProvider.teacherAvatar),
+                        backgroundImage: avatarWidget,
                         backgroundColor: Colors.white,
                       ),
                       const SizedBox(width: 16),
@@ -49,7 +58,7 @@ class TeacherDashboard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Welcome back, ${teacherProvider.teacherName}!',
+                              'Welcome back, $teacherName!',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 20,
@@ -218,11 +227,7 @@ class TeacherDashboard extends StatelessWidget {
                             ),
                             Row(
                               children: [
-                                Icon(
-                                  Icons.star,
-                                  color: Colors.amber,
-                                  size: 16,
-                                ),
+                                const Icon(Icons.star, color: Colors.amber, size: 16),
                                 const SizedBox(width: 4),
                                 Text(
                                   course.rating.toStringAsFixed(1),
@@ -235,7 +240,7 @@ class TeacherDashboard extends StatelessWidget {
                             ),
                           ],
                         ),
-                      )).toList(),
+                      )),
                     ],
                   ),
                 ),
@@ -279,9 +284,10 @@ class TeacherDashboard extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      ...teacherProvider.announcements.take(3).map((announcement) =>
-                          RecentActivityCard(announcement: announcement)
-                      ).toList(),
+                      ...teacherProvider.announcements
+                          .take(3)
+                          .map((announcement) => RecentActivityCard(announcement: announcement))
+                          .toList(),
                     ],
                   ),
                 ),

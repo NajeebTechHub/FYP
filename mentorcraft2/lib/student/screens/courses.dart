@@ -113,7 +113,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
               totalRating: (data['totalRating'] ?? 0).toDouble(),
               enrolledStudents: (data['enrolledStudents'] ?? 0).toInt(),
               createdAt: _parseDate(data['createdAt']),
-              updatedAt: _parseDate(data['updatedAt']),
+              updatedAt: _parseDate(data['updatedAt']), modules: [],
             );
           }).toList();
 

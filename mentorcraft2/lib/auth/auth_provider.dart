@@ -1,23 +1,44 @@
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../models/app_user.dart';
-import '../services/auth_service.dart';
+import 'package:flutter/material.dart';
+import 'package:mentorcraft2/models/app_user.dart';
+import 'package:mentorcraft2/core/models/user_role.dart';
+import 'package:mentorcraft2/services/auth_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
   AppUser? _user;
   bool _isLoading = true;
   bool _isInitialized = false;
   String? _errorMessage;
 
-  AppUser? get user => _user;
-  bool get isLoading => _isLoading;
   bool get isInitialized => _isInitialized;
   bool get isAuthenticated => _user != null;
-  bool get isStudent => _user?.role == UserRole.student;
-  bool get isTeacher => _user?.role == UserRole.teacher;
+  bool get isLoading => _isLoading;
+  AppUser? get user => _user;
   String? get errorMessage => _errorMessage;
+  bool get isTeacher => _user?.role == UserRole.teacher;
+  bool get isStudent => _user?.role == UserRole.student;
+
+  final List<AppUser> _demoUsers = [
+    AppUser(
+      id: 'teacher_001',
+      displayName: 'Dr. Sarah Johnson',
+      email: 'sarah.johnson@mentorcraft.com',
+      avatar: 'assets/teacher_avatar.png',
+      role: UserRole.teacher,
+      createdAt: DateTime.now().subtract(const Duration(days: 365)),
+    ),
+    AppUser(
+      id: 'student_001',
+      displayName: 'John Doe',
+      email: 'john.doe@email.com',
+      avatar: 'assets/student_avatar.png',
+      role: UserRole.student,
+      createdAt: DateTime.now().subtract(const Duration(days: 30)),
+    ),
+  ];
 
   AuthProvider() {
     _initializeAuth();
@@ -26,15 +47,16 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _initializeAuth() async {
     try {
       _setLoading(true);
-
-      // Listen to auth state changes
       _authService.authStateChanges.listen((User? firebaseUser) async {
         if (firebaseUser != null) {
-          // User is signed in, get user data from Firestore
           final appUser = await _authService.getUserFromFirestore(firebaseUser.uid);
-          _setUser(appUser);
+          if (appUser != null) {
+            _setUser(appUser);
+          } else {
+            debugPrint('❌ Failed to fetch user from Firestore');
+            _setUser(null); // fallback or navigate to error screen
+          }
         } else {
-          // User is signed out
           _setUser(null);
         }
 
@@ -45,7 +67,7 @@ class AuthProvider extends ChangeNotifier {
       });
 
     } catch (e) {
-      _setError('Failed to initialize authentication: $e');
+      _setError('Failed to initialize auth: $e');
     } finally {
       _setLoading(false);
     }
@@ -69,7 +91,9 @@ class AuthProvider extends ChangeNotifier {
       );
 
       if (user != null) {
-        _setUser(user);
+        _setUser(user.copyWith(
+          avatar: _firebaseAuth.currentUser?.photoURL ?? '',
+        ));
         return true;
       }
       return false;
@@ -90,9 +114,12 @@ class AuthProvider extends ChangeNotifier {
       _clearError();
 
       final user = await _authService.signInWithEmailAndPassword(email, password);
-
       if (user != null) {
-        _setUser(user);
+        final avatar = user.avatar.isNotEmpty
+            ? user.avatar
+            : (_firebaseAuth.currentUser?.photoURL ?? 'assets/placeholder.jpg');
+
+        _setUser(user.copyWith(avatar: avatar));
         return true;
       }
       return false;
@@ -108,9 +135,10 @@ class AuthProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       await _authService.signOut();
-      _setUser(null);
+      _user = null;
+      notifyListeners();
     } catch (e) {
-      _setError('Failed to sign out: $e');
+      _setError('Logout failed: $e');
     } finally {
       _setLoading(false);
     }
@@ -120,7 +148,6 @@ class AuthProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       _clearError();
-
       await _authService.resetPassword(email);
       return true;
     } catch (e) {
@@ -131,16 +158,44 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> checkOnboardingStatus() async {
-    return await _authService.isOnboardingCompleted();
-  }
-
   Future<void> completeOnboarding() async {
     await _authService.completeOnboarding();
   }
 
-  Future<UserRole?> getCachedUserRole() async {
-    return await _authService.getUserRoleLocally();
+  Future<bool> checkOnboardingStatus() async {
+    return await _authService.isOnboardingCompleted();
+  }
+
+  Future<bool> demoLogin(String email, {UserRole? preferredRole}) async {
+    await Future.delayed(const Duration(seconds: 1));
+
+    AppUser? demo = _demoUsers.firstWhere(
+          (u) => u.email == email,
+      orElse: () => _demoUsers.first,
+    );
+
+    if (preferredRole != null) {
+      demo = _demoUsers.firstWhere((u) => u.role == preferredRole, orElse: () => demo!);
+    }
+
+    _user = demo;
+    notifyListeners();
+    return true;
+  }
+
+  void switchToTeacher() {
+    _user = _demoUsers.firstWhere((u) => u.role == UserRole.teacher);
+    notifyListeners();
+  }
+
+  void switchToStudent() {
+    _user = _demoUsers.firstWhere((u) => u.role == UserRole.student);
+    notifyListeners();
+  }
+
+  void updateProfile(AppUser updatedUser) {
+    _user = updatedUser;
+    notifyListeners();
   }
 
   void _setUser(AppUser? user) {
@@ -167,23 +222,15 @@ class AuthProvider extends ChangeNotifier {
     if (error is FirebaseAuthException) {
       switch (error.code) {
         case 'user-not-found':
-          return 'No user found with this email address.';
+          return 'No user found with this email.';
         case 'wrong-password':
           return 'Incorrect password.';
         case 'email-already-in-use':
           return 'An account already exists with this email.';
         case 'weak-password':
-          return 'Password is too weak.';
-        case 'invalid-email':
-          return 'Invalid email address.';
-        case 'user-disabled':
-          return 'This account has been disabled.';
-        case 'too-many-requests':
-          return 'Too many failed attempts. Please try again later.';
-        case 'operation-not-allowed':
-          return 'Email/password accounts are not enabled.';
+          return 'The password is too weak.';
         default:
-          return error.message ?? 'An authentication error occurred.';
+          return error.message ?? 'An error occurred.';
       }
     }
     return error.toString();

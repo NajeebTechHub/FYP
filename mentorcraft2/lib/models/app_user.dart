@@ -1,23 +1,27 @@
+import '../core/models/user_role.dart';
+
 class AppUser {
-  final String uid;
+  final String id;
   final String email;
   final String displayName;
   final UserRole role;
   final DateTime createdAt;
   final bool isEmailVerified;
+  final String avatar;
 
   AppUser({
-    required this.uid,
+    required this.id,
     required this.email,
     required this.displayName,
     required this.role,
     required this.createdAt,
     this.isEmailVerified = false,
+    this.avatar = '',
   });
 
   factory AppUser.fromFirestore(Map<String, dynamic> data, String uid) {
     return AppUser(
-      uid: uid,
+      id: uid,
       email: data['email'] ?? '',
       displayName: data['displayName'] ?? '',
       role: UserRole.values.firstWhere(
@@ -26,6 +30,7 @@ class AppUser {
       ),
       createdAt: data['createdAt']?.toDate() ?? DateTime.now(),
       isEmailVerified: data['isEmailVerified'] ?? false,
+      avatar: data['avatar'] ?? '',
     );
   }
 
@@ -36,6 +41,7 @@ class AppUser {
       'role': role.toString().split('.').last,
       'createdAt': createdAt,
       'isEmailVerified': isEmailVerified,
+      'avatar': avatar,
     };
   }
 
@@ -46,16 +52,16 @@ class AppUser {
     UserRole? role,
     DateTime? createdAt,
     bool? isEmailVerified,
+    String? avatar,
   }) {
     return AppUser(
-      uid: uid ?? this.uid,
+      id: uid ?? this.id,
       email: email ?? this.email,
       displayName: displayName ?? this.displayName,
       role: role ?? this.role,
       createdAt: createdAt ?? this.createdAt,
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
+      avatar: avatar ?? this.avatar,
     );
   }
 }
-
-enum UserRole { student, teacher }

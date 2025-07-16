@@ -30,20 +30,17 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        foregroundColor: AppColors.primary,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () => _showFilterDialog(context),
-          ),
-        ],
-      ),
       body: Consumer<TeacherProvider>(
         builder: (context, teacherProvider, child) {
           return Column(
             children: [
+              Align(
+                alignment: Alignment.topRight,
+                child: IconButton(
+                  icon: const Icon(Icons.filter_list),
+                  onPressed: () => _showFilterDialog(context),
+                ),
+              ),
               if (_selectedCourse != 'all' || _selectedType != 'all')
                 Container(
                   padding: const EdgeInsets.all(16),

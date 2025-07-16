@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mentorcraft2/screens/auth/login_screen.dart';
+import '../../models/app_user.dart';
 import '../models/user_role.dart';
 import '../../teacher/screens/teacher_main_screen.dart';
 

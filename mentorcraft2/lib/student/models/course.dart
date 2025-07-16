@@ -1,34 +1,6 @@
-// class Course {
-//   final String id;
-//   final String name;
-//   final String title;
-//   final String description;
-//   final String imageUrl;
-//   final double price;
-//   final String duration;
-//   final String level;
-//   final double rating;
-//   final int studentsCount;
-//   final String instructor;
-//   final List<String> tags;
-//
-//   Course( {
-//     required this.id,
-//     required this.name,
-//     required this.title,
-//     required this.description,
-//     required this.imageUrl,
-//     required this.price,
-//     required this.duration,
-//     required this.level,
-//     required this.rating,
-//     required this.studentsCount,
-//     required this.instructor,
-//     required this.tags,
-//   });
-// }
-
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../../teacher/models/teacher_course.dart';
 
 class Course {
   final String id;
@@ -45,6 +17,7 @@ class Course {
   final double totalRating;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final List<CourseModule> modules;
 
   Course({
     required this.id,
@@ -61,6 +34,7 @@ class Course {
     required this.totalRating,
     required this.createdAt,
     required this.updatedAt,
+    required this.modules,
   });
 
   factory Course.fromFirestore(Map<String, dynamic> data, String docId) {
@@ -79,7 +53,32 @@ class Course {
       totalRating: (data['totalrating'] ?? 0).toDouble(),
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updateAt'] as Timestamp).toDate(),
-
+      modules: (data['modules'] as List?)?.map((m) => CourseModule.fromJson(m)).toList() ?? [],
     );
+  }
+
+  int get totalLessonsCount {
+    return modules.fold(0, (sum, module) => sum + module.lessons.length);
+  }
+
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'imageurl': imageUrl,
+      'price': price,
+      'duration': duration,
+      'level': level,
+      'rating': rating,
+      'enrolledstudents': enrolledStudents,
+      'teacherId': teacherId,
+      'teachername': teacherName,
+      'totalrating': totalRating,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updateAt': Timestamp.fromDate(updatedAt),
+      'modules': modules.map((m) => m.toJson()).toList(),
+    };
   }
 }

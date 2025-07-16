@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../models/course.dart';
 import '../models/enroll_courses.dart';
 import 'package:mentorcraft2/theme/color.dart';
-import '../widgets/mycourses_widgets/enrolled_courses.dart';
+import '../widgets/mycourses_widgets/enrolled_courses_card.dart';
 import 'course_details_screen.dart';
 
 class MyCoursesScreen extends StatefulWidget {
@@ -72,7 +72,7 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> with SingleTickerProv
         createdAt: _parseDate(courseData['createdAt']),
         updatedAt: _parseDate(courseData['updatedAt']),
         duration: courseData['duration'] ?? '',
-        enrolledStudents: courseData['enrolledStudents'] ?? 0,
+        enrolledStudents: courseData['enrolledStudents'] ?? 0, modules: [],
       );
 
       final progress = (enrolledData['progress'] ?? 0.0).toDouble();
@@ -84,7 +84,7 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> with SingleTickerProv
           course: course,
           progress: progress,
           enrollmentDate: enrollmentDate,
-          lastAccessedDate: lastAccessedDate,
+          lastAccessedDate: lastAccessedDate, completedLessonIds: [],
         ),
       );
     }

@@ -1,74 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/app_user.dart';
 import '../core/models/user_role.dart';
-
-class AppUser {
-  final String uid;
-  final String email;
-  final String displayName;
-  final UserRole role;
-  final String photoUrl;
-  final String phoneNumber;
-  final String bio;
-
-  AppUser({
-    required this.uid,
-    required this.email,
-    required this.displayName,
-    required this.role,
-    this.photoUrl = '',
-    this.phoneNumber = '',
-    this.bio = '',
-  });
-
-  Map<String, dynamic> toJson() {
-    return {
-      'uid': uid,
-      'email': email,
-      'displayName': displayName,
-      'role': role.toString().split('.').last,
-      'photoUrl': photoUrl,
-      'phoneNumber': phoneNumber,
-      'bio': bio,
-    };
-  }
-
-  factory AppUser.fromJson(Map<String, dynamic> json) {
-    return AppUser(
-      uid: json['uid'] ?? '',
-      email: json['email'] ?? '',
-      displayName: json['displayName'] ?? '',
-      role: UserRole.values.firstWhere(
-            (role) => role.toString().split('.').last == json['role'],
-        orElse: () => UserRole.student,
-      ),
-      photoUrl: json['photoUrl'] ?? '',
-      phoneNumber: json['phoneNumber'] ?? '',
-      bio: json['bio'] ?? '',
-    );
-  }
-
-  AppUser copyWith({
-    String? displayName,
-    String? photoUrl,
-    String? phoneNumber,
-    String? bio,
-  }) {
-    return AppUser(
-      uid: uid,
-      email: email,
-      displayName: displayName ?? this.displayName,
-      role: role,
-      photoUrl: photoUrl ?? this.photoUrl,
-      phoneNumber: phoneNumber ?? this.phoneNumber,
-      bio: bio ?? this.bio,
-    );
-  }
-}
 
 class SimpleAuthProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
   AppUser? _user;
   bool _isLoading = false;
   bool _isInitialized = false;
@@ -92,25 +30,22 @@ class SimpleAuthProvider extends ChangeNotifier {
       final currentUser = _auth.currentUser;
       if (currentUser != null) {
         final prefs = await SharedPreferences.getInstance();
-        final role = prefs.getString('user_role');
-        final phone = prefs.getString('user_phone') ?? '';
-        final bio = prefs.getString('user_bio') ?? '';
-        final photo = prefs.getString('user_photo') ?? '';
+        final roleStr = prefs.getString('user_role');
+        final role = UserRole.values.firstWhere(
+              (r) => r.toString().split('.').last == roleStr,
+          orElse: () => UserRole.student,
+        );
 
-        if (role != null) {
-          _setUser(AppUser(
-            uid: currentUser.uid,
-            email: currentUser.email ?? '',
-            displayName: currentUser.displayName ?? '',
-            role: UserRole.values.firstWhere(
-                  (r) => r.toString().split('.').last == role,
-              orElse: () => UserRole.student,
-            ),
-            phoneNumber: phone,
-            bio: bio,
-            photoUrl: photo,
-          ));
-        }
+        final appUser = AppUser(
+          id: currentUser.uid,
+          email: currentUser.email ?? '',
+          displayName: currentUser.displayName ?? '',
+          role: role,
+          createdAt: DateTime.now(), // optional: fetch from Firestore if needed
+          isEmailVerified: currentUser.emailVerified,
+        );
+
+        _setUser(appUser);
       }
     } catch (e) {
       _setError('Failed to initialize: $e');
@@ -137,15 +72,17 @@ class SimpleAuthProvider extends ChangeNotifier {
 
       await credential.user!.updateDisplayName(displayName);
 
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_role', role.toString().split('.').last);
+
       final appUser = AppUser(
-        uid: credential.user!.uid,
+        id: credential.user!.uid,
         email: email,
         displayName: displayName,
         role: role,
+        createdAt: DateTime.now(),
+        isEmailVerified: false,
       );
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_role', role.toString().split('.').last);
 
       _setUser(appUser);
       return true;
@@ -171,22 +108,19 @@ class SimpleAuthProvider extends ChangeNotifier {
       );
 
       final prefs = await SharedPreferences.getInstance();
-      final role = prefs.getString('user_role') ?? 'student';
-      final phone = prefs.getString('user_phone') ?? '';
-      final bio = prefs.getString('user_bio') ?? '';
-      final photo = prefs.getString('user_photo') ?? '';
+      final roleStr = prefs.getString('user_role') ?? 'student';
+      final role = UserRole.values.firstWhere(
+            (r) => r.toString().split('.').last == roleStr,
+        orElse: () => UserRole.student,
+      );
 
       final appUser = AppUser(
-        uid: credential.user!.uid,
+        id: credential.user!.uid,
         email: credential.user!.email ?? '',
         displayName: credential.user!.displayName ?? '',
-        role: UserRole.values.firstWhere(
-              (r) => r.toString().split('.').last == role,
-          orElse: () => UserRole.student,
-        ),
-        phoneNumber: phone,
-        bio: bio,
-        photoUrl: photo,
+        role: role,
+        createdAt: DateTime.now(), // fallback (can be updated from Firestore)
+        isEmailVerified: credential.user!.emailVerified,
       );
 
       _setUser(appUser);
@@ -236,47 +170,6 @@ class SimpleAuthProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_completed', true);
   }
-
-  Future<void> updateProfile({
-    String? displayName,
-    String? photoUrl,
-    String? phoneNumber,
-    String? bio,
-  }) async {
-    if (_user == null) return;
-
-    final updated = _user!.copyWith(
-      displayName: displayName,
-      photoUrl: photoUrl,
-      phoneNumber: phoneNumber,
-      bio: bio,
-    );
-
-    _user = updated;
-    notifyListeners();
-
-    final prefs = await SharedPreferences.getInstance();
-    if (displayName != null) await prefs.setString('displayName', displayName);
-    if (photoUrl != null) await prefs.setString('user_photo', photoUrl);
-    if (phoneNumber != null) await prefs.setString('user_phone', phoneNumber);
-    if (bio != null) await prefs.setString('user_bio', bio);
-  }
-
-  Future<void> updateProfilePhoto(String url) async {
-    _user = AppUser(
-      uid: _user!.uid,
-      email: _user!.email,
-      displayName: _user!.displayName,
-      role: _user!.role,
-      photoUrl: url,
-    );
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('photo_url', url);
-
-    notifyListeners();
-  }
-
 
   void _setUser(AppUser? user) {
     _user = user;

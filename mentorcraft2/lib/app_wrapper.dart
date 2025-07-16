@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:mentorcraft2/auth/simple_auth_provider.dart';
 import 'package:mentorcraft2/core/utils/app_router.dart';
+import 'package:mentorcraft2/teacher/provider/teacher_provider.dart';
 import 'package:mentorcraft2/teacher/screens/teacher_main_screen.dart';
 import 'package:mentorcraft2/student/student_main_app.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'auth/auth_provider.dart';
+import 'core/models/user_role.dart';
 import 'models/app_user.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'theme/color.dart';
@@ -156,14 +159,12 @@ class AuthenticationWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, child) {
-        // Show loading screen while initializing
+    return Consumer2<AuthProvider, TeacherProvider>(
+      builder: (context, authProvider, teacherProvider, child) {
         if (!authProvider.isInitialized || authProvider.isLoading) {
           return const LoadingScreen();
         }
 
-        // If user is not authenticated, handle onboarding and login
         if (!authProvider.isAuthenticated) {
           return FutureBuilder<bool>(
             future: authProvider.checkOnboardingStatus(),
@@ -174,23 +175,32 @@ class AuthenticationWrapper extends StatelessWidget {
 
               final onboardingCompleted = snapshot.data ?? false;
 
-              if (!onboardingCompleted) {
-                return const OnboardingScreen();
-              } else {
-                return RoleSelectionScreen();
-              }
+              return onboardingCompleted
+                  ? RoleSelectionScreen()
+                  : const OnboardingScreen();
             },
           );
         }
 
-        // User is authenticated, route to appropriate dashboard
         final user = authProvider.user!;
+        final role = user.role;
 
-        if (user.role == UserRole.student) {
-          return const StudentMainScreen();
-        } else {
+        if (role == UserRole.teacher) {
+          // Initialize teacherProvider only once
+          if (!teacherProvider.isInitialized) {
+            teacherProvider.initializeDataWithUser(user);
+            return const LoadingScreen(); // Give time for async to complete
+          }
+
+          // ✅ Now only load TeacherMainScreen when teacherId is ready
+          if (teacherProvider.teacherId.isEmpty) {
+            return const LoadingScreen();
+          }
+
           return const TeacherMainScreen();
         }
+
+        return const StudentMainScreen();
       },
     );
   }

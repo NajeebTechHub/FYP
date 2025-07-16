@@ -23,11 +23,19 @@ class _CourseManagementScreenState extends State<CourseManagementScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    Future.microtask(() {
-      final teacherId = Provider.of<TeacherProvider>(context, listen: false).teacherId;
-      Provider.of<TeacherProvider>(context, listen: false).subscribeToCourses(teacherId);
+
+    Future.microtask(() async {
+      final provider = Provider.of<TeacherProvider>(context, listen: false);
+      if (provider.teacherId.isEmpty || provider.teacherName.isEmpty) {
+        await provider.initializeData();
+      }
+
+      if (provider.teacherId.isNotEmpty) {
+        provider.subscribeToCourses(provider.teacherId);
+      }
     });
   }
+
 
   @override
   void dispose() {
