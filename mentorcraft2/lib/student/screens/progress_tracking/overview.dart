@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../theme/color.dart';
 import '../../models/course_progress.dart';
@@ -6,11 +8,13 @@ import 'course_progress_page.dart';
 
 class OverviewTab extends StatefulWidget {
   final ProgressSummary progressSummary;
+  final List<CourseProgress> courseProgressList;
   final bool isTablet;
 
   const OverviewTab({
     Key? key,
     required this.progressSummary,
+    required this.courseProgressList,
     required this.isTablet,
   }) : super(key: key);
 
@@ -36,32 +40,92 @@ class _OverviewTabState extends State<OverviewTab> {
   @override
   void initState() {
     super.initState();
-    _progressSummary = widget.progressSummary;
-    _courseProgress = [
-      CourseProgress(
-        courseId: '001',
-        courseName: 'Flutter Basics',
-        percentComplete: 0.7,
-        totalMinutes: 300,
-        minutesCompleted: 210,
-        courseStartDate: DateTime.now(),
-        activityLogs: [],
-        lastAccessed: DateTime.now().subtract(const Duration(days: 2)),
-        category: 'Mobile Development',
-      ),
-      CourseProgress(
-        courseId: '002',
-        courseName: 'Data Science 101',
-        percentComplete: 0.45,
-        totalMinutes: 200,
-        minutesCompleted: 90,
-        courseStartDate: DateTime.now(),
-        activityLogs: [],
-        lastAccessed: DateTime.now().subtract(const Duration(days: 1)),
-        category: 'Data Science',
-      ),
-    ];
+    _courseProgress = widget.courseProgressList;
 
+    _progressSummary = widget.progressSummary.copyWith(
+      totalCoursesEnrolled: _courseProgress.length,
+      coursesCompleted: _courseProgress.where((c) => c.percentComplete == 1.0).length,
+    );
+
+    _loadLearningHours();
+  }
+
+  Future<void> _loadLearningHours() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+
+    try {
+      final learningHours = await calculateLearningHours(userId);
+      setState(() {
+        _progressSummary = _progressSummary.copyWith(
+          totalLearningHours: learningHours,
+        );
+      });
+    } catch (e) {
+      debugPrint("Error calculating learning hours: $e");
+    }
+  }
+
+  Future<int> calculateLearningHours(String userId) async {
+    int totalMinutes = 0;
+
+    final coursesSnapshot = await FirebaseFirestore.instance.collection('courses').get();
+
+    for (final courseDoc in coursesSnapshot.docs) {
+      final enrolledUserDoc = await courseDoc.reference
+          .collection('enrolledUsers')
+          .doc(userId)
+          .get();
+
+      if (!enrolledUserDoc.exists) {
+        print("User not enrolled in course ${courseDoc.id}");
+        continue;
+      }
+
+      final enrolledData = enrolledUserDoc.data();
+      if (enrolledData == null || !enrolledData.containsKey('completedLessons')) {
+        print("No completedLessons for course ${courseDoc.id}");
+        continue;
+      }
+
+      final completedLessonIds = List<String>.from(enrolledData['completedLessons']);
+      print("✅ ${courseDoc.id} completed lessons: $completedLessonIds");
+
+      final modulesSnapshot = await courseDoc.reference.collection('modules').get();
+
+      for (final moduleDoc in modulesSnapshot.docs) {
+        final lessonsSnapshot = await moduleDoc.reference.collection('lessons').get();
+
+        for (final lessonDoc in lessonsSnapshot.docs) {
+          final lessonId = lessonDoc.id;
+
+          if (completedLessonIds.contains(lessonId)) {
+            final data = lessonDoc.data();
+            var durationRaw = data['duration'];
+            int? duration;
+
+            if (durationRaw is int) {
+              duration = durationRaw;
+            } else if (durationRaw is String) {
+              duration = int.tryParse(durationRaw);
+            } else if (durationRaw is double) {
+              duration = durationRaw.floor();
+            }
+
+            if (duration != null) {
+              print("🕒 Adding $duration min from lesson $lessonId");
+              totalMinutes += duration;
+            } else {
+              print("⚠️ Invalid duration for lesson $lessonId: $durationRaw");
+            }
+          }
+        }
+      }
+    }
+
+    final totalHours = (totalMinutes / 60).floor();
+    print("🎯 Total learning hours: $totalHours");
+    return totalHours;
   }
 
   @override
@@ -86,7 +150,7 @@ class _OverviewTabState extends State<OverviewTab> {
               ),
             ),
           ),
-          ..._courseProgress.map((course) => CourseProgressPage(courseProgressList: [course],)).toList(),
+          ..._courseProgress.map((course) => CourseProgressPage(courseProgressList: [course])).toList(),
         ],
       ),
     );
@@ -119,7 +183,7 @@ class _OverviewTabState extends State<OverviewTab> {
             }
           },
           borderRadius: BorderRadius.circular(12),
-          items: _timeFrames.map<DropdownMenuItem<String>>((String value) {
+          items: _timeFrames.map((String value) {
             return DropdownMenuItem<String>(
               value: value,
               child: Text(value),
@@ -131,7 +195,7 @@ class _OverviewTabState extends State<OverviewTab> {
   }
 
   Widget _buildSummaryCards(bool isTablet) {
-    Widget buildSummaryCard(String title, String value, IconData icon, Color color) {
+    Widget buildCard(String title, String value, IconData icon, Color color) {
       return Expanded(
         child: Card(
           elevation: 2,
@@ -143,11 +207,7 @@ class _OverviewTabState extends State<OverviewTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  icon,
-                  color: color,
-                  size: 24,
-                ),
+                Icon(icon, color: color, size: 24),
                 const SizedBox(height: 12),
                 Text(
                   value,
@@ -160,7 +220,7 @@ class _OverviewTabState extends State<OverviewTab> {
                 const SizedBox(height: 4),
                 Text(
                   title,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
                     fontWeight: FontWeight.w500,
@@ -173,43 +233,28 @@ class _OverviewTabState extends State<OverviewTab> {
       );
     }
 
+    List<Widget> cards = [
+      buildCard('Total Courses', _progressSummary.totalCoursesEnrolled.toString(), Icons.collections_bookmark, AppColors.primary),
+      buildCard('Completed', _progressSummary.coursesCompleted.toString(), Icons.check_circle, Colors.green),
+      buildCard('Certificates', _progressSummary.certificatesEarned.toString(), Icons.workspace_premium, Colors.amber),
+      buildCard('Learning Hours', _progressSummary.totalLearningHours.toString(), Icons.timer, AppColors.accent),
+    ];
+
     if (isTablet) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          children: [
-            buildSummaryCard('Total Courses', _progressSummary.totalCoursesEnrolled.toString(), Icons.collections_bookmark, AppColors.primary),
-            const SizedBox(width: 12),
-            buildSummaryCard('Completed', _progressSummary.coursesCompleted.toString(), Icons.check_circle, Colors.green),
-            const SizedBox(width: 12),
-            buildSummaryCard('Certificates', _progressSummary.certificatesEarned.toString(), Icons.workspace_premium, Colors.amber),
-            const SizedBox(width: 12),
-            buildSummaryCard('Learning Hours', _progressSummary.totalLearningHours.toString(), Icons.timer, AppColors.accent),
-          ],
-        ),
+        child: Row(children: cards.expand((card) => [card, const SizedBox(width: 12)]).toList()..removeLast()),
       );
     } else {
       return Column(
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                buildSummaryCard('Total Courses', _progressSummary.totalCoursesEnrolled.toString(), Icons.collections_bookmark, AppColors.primary),
-                const SizedBox(width: 12),
-                buildSummaryCard('Completed', _progressSummary.coursesCompleted.toString(), Icons.check_circle, Colors.green),
-              ],
-            ),
+            child: Row(children: cards.sublist(0, 2).expand((card) => [card, const SizedBox(width: 12)]).toList()..removeLast()),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                buildSummaryCard('Certificates', _progressSummary.certificatesEarned.toString(), Icons.workspace_premium, Colors.amber),
-                const SizedBox(width: 12),
-                buildSummaryCard('Learning Hours', _progressSummary.totalLearningHours.toString(), Icons.timer, AppColors.accent),
-              ],
-            ),
+            child: Row(children: cards.sublist(2, 4).expand((card) => [card, const SizedBox(width: 12)]).toList()..removeLast()),
           ),
         ],
       );
@@ -220,7 +265,7 @@ class _OverviewTabState extends State<OverviewTab> {
     return GestureDetector(
       onTap: () {
         setState(() {
-          _currentQuoteIndex = ((_currentQuoteIndex + 1) % _motivationalQuotes.length);
+          _currentQuoteIndex = (_currentQuoteIndex + 1) % _motivationalQuotes.length;
         });
       },
       child: Container(
@@ -246,11 +291,7 @@ class _OverviewTabState extends State<OverviewTab> {
         ),
         child: Row(
           children: [
-            const Icon(
-              Icons.format_quote,
-              color: Colors.white,
-              size: 24,
-            ),
+            const Icon(Icons.format_quote, color: Colors.white, size: 24),
             const SizedBox(width: 16),
             Expanded(
               child: Column(

@@ -186,5 +186,4 @@ class CourseProgressPage extends StatelessWidget {
       ),
     ];
   }
-
 }

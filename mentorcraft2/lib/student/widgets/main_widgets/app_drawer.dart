@@ -7,7 +7,6 @@ import 'package:mentorcraft2/student/screens/payment_historu_screen.dart';
 import 'package:mentorcraft2/student/screens/progress_tracking_screen.dart';
 import 'package:mentorcraft2/student/screens/quiz_screen.dart';
 import 'package:mentorcraft2/student/screens/settings_screen.dart';
-import 'package:mentorcraft2/student/models/course_progress.dart';
 import 'package:mentorcraft2/theme/color.dart';
 import 'package:provider/provider.dart';
 import '../../../auth/simple_auth_provider.dart';
@@ -62,14 +61,14 @@ class AppDrawer extends StatelessWidget {
       accountName: const Text('John Doe',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
       accountEmail:
-          const Text('john.doe@example.com', style: TextStyle(fontSize: 14)),
+      const Text('john.doe@example.com', style: TextStyle(fontSize: 14)),
       currentAccountPicture: CircleAvatar(
         backgroundColor: Colors.white,
         child: ClipOval(
           child: Container(
             color: AppColors.lightBlue.withOpacity(0.2),
             child:
-                const Icon(Icons.person, size: 50, color: AppColors.darkBlue),
+            const Icon(Icons.person, size: 50, color: AppColors.darkBlue),
           ),
         ),
       ),
@@ -164,7 +163,6 @@ class AppDrawer extends StatelessWidget {
           Icons.forum_outlined,
           'Discussion Forums',
           '/forums',
-          badge: 3,
           onTap: () {
             Navigator.push(
                 context, MaterialPageRoute(builder: (_) => ForumsScreen()));
@@ -176,22 +174,10 @@ class AppDrawer extends StatelessWidget {
           'Progress Tracking',
           '/progress',
           onTap: () {
-            final dummySummary = ProgressSummary(
-                totalCoursesEnrolled: 3,
-                coursesCompleted: 2,
-                certificatesEarned: 2,
-                totalLearningHours: 5,
-                categoryCompletion: {},
-                dailyLearningMinutes: {},
-                heatmapData: {},
-                certificates: []);
-
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => ProgressTrackingScreen(
-                  progressSummary: dummySummary,
-                ),
+                builder: (_) => const ProgressTrackingScreen(),
               ),
             );
           },
@@ -275,34 +261,35 @@ class AppDrawer extends StatelessWidget {
           onTap: () {
             showDialog(
               context: context,
-              builder: (_) => AlertDialog(
+              builder: (dialogContext) => AlertDialog(
                 title: const Text('Logout'),
                 content: const Text('Are you sure you want to logout?'),
                 actions: [
                   TextButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () => Navigator.pop(dialogContext),
                     child: const Text('CANCEL'),
                   ),
                   TextButton(
                     onPressed: () async {
-                      Navigator.pop(context);
+                      Navigator.pop(dialogContext);
                       Navigator.pop(context);
 
                       final authProvider = Provider.of<SimpleAuthProvider>(
-                          context,
-                          listen: false);
+                        context,
+                        listen: false,
+                      );
                       await authProvider.signOut();
 
                       Navigator.of(context).pushAndRemoveUntil(
                         MaterialPageRoute(
-                            builder: (_) =>
-                                LoginScreen(selectedRole: UserRole.teacher)),
-                        (route) => false,
+                          builder: (_) =>
+                              LoginScreen(selectedRole: UserRole.teacher),
+                        ),
+                            (route) => false,
                       );
 
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Logged out successfully')),
+                        const SnackBar(content: Text('Logged out successfully')),
                       );
                     },
                     child: const Text('LOGOUT'),
@@ -317,15 +304,15 @@ class AppDrawer extends StatelessWidget {
   }
 
   Widget _buildDrawerItem(
-    BuildContext context,
-    IconData icon,
-    String title,
-    String route, {
-    bool isSelected = false,
-    Color? textColor,
-    int? badge,
-    VoidCallback? onTap,
-  }) {
+      BuildContext context,
+      IconData icon,
+      String title,
+      String route, {
+        bool isSelected = false,
+        Color? textColor,
+        int? badge,
+        VoidCallback? onTap,
+      }) {
     return ListTile(
       leading: Icon(
         icon,
@@ -342,20 +329,20 @@ class AppDrawer extends StatelessWidget {
       ),
       trailing: badge != null
           ? Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: AppColors.accent,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                badge.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            )
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: AppColors.accent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          badge.toString(),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      )
           : null,
       onTap: onTap,
       selected: isSelected,

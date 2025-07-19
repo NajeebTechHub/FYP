@@ -1,6 +1,8 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-
+import 'package:flutter_heatmap_calendar/flutter_heatmap_calendar.dart';
 import '../../../theme/color.dart';
 import '../../models/course_progress.dart';
 
@@ -57,25 +59,33 @@ class CategoryPieChartSection extends StatelessWidget {
     );
   }
 
-  List<PieChartSectionData> _getCategorySections(List<CourseProgress> data) {
-    final categoryColors = {
-      'Mobile Development': Colors.blue,
-      'Data Science': Colors.red,
-      'Design': Colors.purple,
-      'Web Development': Colors.orange,
-      'Business': Colors.teal,
-    };
+  static final Map<String, Color> _categoryColorCache = {};
 
+  Color _generateColorFromString(String input) {
+    final hash = input.codeUnits.fold(0, (prev, elem) => prev + elem);
+    final random = Random(hash);
+    return Color.fromARGB(
+      255,
+      100 + random.nextInt(156),
+      100 + random.nextInt(156),
+      100 + random.nextInt(156),
+    );
+  }
+
+  List<PieChartSectionData> _getCategorySections(List<CourseProgress> data) {
     final categoryCount = <String, int>{};
+
     for (final course in data) {
-      categoryCount[course.category] =
-          (categoryCount[course.category] ?? 0) + 1;
+      final category = course.courseName.trim().isNotEmpty ? course.courseName.trim() : 'Uncategorized';
+      categoryCount[category] = (categoryCount[category] ?? 0) + 1;
     }
 
     return categoryCount.entries.map((entry) {
-      final color = categoryColors[entry.key] ?? Colors.grey;
+      final category = entry.key;
+      _categoryColorCache[category] ??= _generateColorFromString(category);
+
       return PieChartSectionData(
-        color: color,
+        color: _categoryColorCache[category],
         value: entry.value.toDouble(),
         title: '',
         radius: 50,
@@ -84,25 +94,19 @@ class CategoryPieChartSection extends StatelessWidget {
   }
 
   Widget _buildPieChartLegend(List<CourseProgress> data) {
-    final categoryColors = {
-      'Mobile Development': Colors.blue,
-      'Data Science': Colors.red,
-      'Design': Colors.purple,
-      'Web Development': Colors.orange,
-      'Business': Colors.teal,
-    };
-
     final categoryCount = <String, int>{};
+
     for (final course in data) {
-      categoryCount[course.category] =
-          (categoryCount[course.category] ?? 0) + 1;
+      final category = course.courseName.trim().isNotEmpty ? course.courseName.trim() : 'Uncategorized';
+      categoryCount[category] = (categoryCount[category] ?? 0) + 1;
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: categoryCount.entries.map((entry) {
-        final color = categoryColors[entry.key] ?? Colors.grey;
+        final color = _categoryColorCache[entry.key] ?? _generateColorFromString(entry.key);
+
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(

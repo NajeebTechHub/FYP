@@ -1,4 +1,3 @@
-
 class ActivityLog {
   final DateTime date;
   final int minutesSpent;
@@ -7,6 +6,20 @@ class ActivityLog {
     required this.date,
     required this.minutesSpent,
   });
+
+  factory ActivityLog.fromMap(Map<String, dynamic> map) {
+    return ActivityLog(
+      date: DateTime.parse(map['date']),
+      minutesSpent: map['minutesSpent'],
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'date': date.toIso8601String(),
+      'minutesSpent': minutesSpent,
+    };
+  }
 }
 
 class CourseProgress {
@@ -32,7 +45,47 @@ class CourseProgress {
     required this.activityLogs,
   });
 
-  int get estimatedMinutesLeft => (totalMinutes - minutesCompleted).clamp(0, totalMinutes);
+  int get estimatedMinutesLeft =>
+      (totalMinutes - minutesCompleted).clamp(0, totalMinutes);
+
+  factory CourseProgress.fromFirestore(String id, Map<String, dynamic> data) {
+    final rawLogs = data['activityLogs'];
+    return CourseProgress(
+      courseId: data['courseId'] ?? id,
+      courseName: data['courseName'] ?? '',
+      category: data['category'] ?? '',
+      percentComplete: (data['percentComplete'] as num?)?.toDouble() ?? 0.0,
+      totalMinutes: data['totalMinutes'] ?? 0,
+      minutesCompleted: data['minutesCompleted'] ?? 0,
+      lastAccessed: data['lastAccessed'] != null
+          ? DateTime.tryParse(data['lastAccessed']) ?? DateTime.now()
+          : DateTime.now(),
+      courseStartDate: data['courseStartDate'] != null
+          ? DateTime.tryParse(data['courseStartDate']) ?? DateTime.now()
+          : DateTime.now(),
+      activityLogs: rawLogs != null
+          ? (rawLogs as List)
+          .map((e) => ActivityLog.fromMap(Map<String, dynamic>.from(e)))
+          .toList()
+          : [],
+    );
+  }
+
+
+  Map<String, dynamic> toFirestore() {
+    return {
+      'courseId': courseId,
+      'courseName': courseName,
+      'category': category,
+      'percentComplete': percentComplete,
+      'totalMinutes': totalMinutes,
+      'minutesCompleted': minutesCompleted,
+      'lastAccessed': lastAccessed.toIso8601String(),
+      'courseStartDate': courseStartDate.toIso8601String(),
+      'activityLogs': activityLogs.map((e) => e.toMap()).toList(),
+    };
+  }
+
 
   static List<CourseProgress> getSampleProgressData() {
     return [
@@ -64,13 +117,13 @@ class CourseProgress {
   static List<ActivityLog> _generateActivityLogs(int days, double completionRate) {
     final logs = <ActivityLog>[];
     final now = DateTime.now();
-    final random = DateTime.now().millisecondsSinceEpoch;
+    final seed = DateTime.now().millisecondsSinceEpoch;
 
     for (int i = days - 1; i >= 0; i--) {
       final date = now.subtract(Duration(days: i));
-      final minutes = (((random + i) % 5) + 1) * 15;
+      final minutes = (((seed + i) % 5) + 1) * 15;
 
-      if ((random + i) % 7 != 0) {
+      if ((seed + i) % 7 != 0) {
         logs.add(ActivityLog(
           date: date,
           minutesSpent: minutes,
@@ -97,6 +150,30 @@ class Certificate {
     required this.dateEarned,
     required this.category,
   });
+
+  factory Certificate.fromFirestore(String id, Map<String, dynamic> data) {
+    return Certificate(
+      id: data['id'] ?? id,
+      courseId: data['courseId'] ?? '',
+      courseName: data['courseName'] ?? '',
+      imageUrl: data['imageUrl'] ?? '',
+      dateEarned: data['dateEarned'] != null
+          ? DateTime.tryParse(data['dateEarned']) ?? DateTime.now()
+          : DateTime.now(),
+      category: data['category'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toFirestore() {
+    return {
+      'id': id,
+      'courseId': courseId,
+      'courseName': courseName,
+      'imageUrl': imageUrl,
+      'dateEarned': dateEarned.toIso8601String(),
+      'category': category,
+    };
+  }
 
   static List<Certificate> getSampleCertificates() {
     return [
@@ -133,13 +210,17 @@ class ProgressSummary {
     required this.certificates,
   });
 
-  static ProgressSummary generateFromCourseProgress(List<CourseProgress> courses) {
+  static ProgressSummary generateFromCourseProgress(
+      List<CourseProgress> courses,
+      List<Certificate> certificates,
+      ) {
     final categoryCompletion = <String, int>{};
     var totalLearningMinutes = 0;
     final dailyMinutes = <DateTime, int>{};
     final heatmap = <DateTime, int>{};
 
-    final completedCourses = courses.where((c) => c.percentComplete >= 0.95).length;
+    final completedCourses =
+        courses.where((c) => c.percentComplete >= 0.95).length;
 
     for (final course in courses) {
       final category = course.category;
@@ -152,12 +233,11 @@ class ProgressSummary {
       for (final log in course.activityLogs) {
         final date = DateTime(log.date.year, log.date.month, log.date.day);
         dailyMinutes[date] = (dailyMinutes[date] ?? 0) + log.minutesSpent;
+
         final intensity = log.minutesSpent ~/ 15;
         heatmap[date] = (heatmap[date] ?? 0) + intensity.clamp(0, 4);
       }
     }
-
-    final certificates = Certificate.getSampleCertificates();
 
     return ProgressSummary(
       totalCoursesEnrolled: courses.length,
@@ -168,6 +248,29 @@ class ProgressSummary {
       dailyLearningMinutes: dailyMinutes,
       heatmapData: heatmap,
       certificates: certificates,
+    );
+  }
+
+  ProgressSummary copyWith({
+    int? totalCoursesEnrolled,
+    int? coursesCompleted,
+    int? certificatesEarned,
+    int? totalLearningHours,
+    Map<String, int>? categoryCompletion,
+    Map<DateTime, int>? dailyLearningMinutes,
+    Map<DateTime, int>? heatmapData,
+    List<Certificate>? certificates,
+  }) {
+    return ProgressSummary(
+      totalCoursesEnrolled:
+      totalCoursesEnrolled ?? this.totalCoursesEnrolled,
+      coursesCompleted: coursesCompleted ?? this.coursesCompleted,
+      certificatesEarned: certificatesEarned ?? this.certificatesEarned,
+      totalLearningHours: totalLearningHours ?? this.totalLearningHours,
+      categoryCompletion: categoryCompletion ?? this.categoryCompletion,
+      dailyLearningMinutes: dailyLearningMinutes ?? this.dailyLearningMinutes,
+      heatmapData: heatmapData ?? this.heatmapData,
+      certificates: certificates ?? this.certificates,
     );
   }
 

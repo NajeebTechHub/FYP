@@ -1,7 +1,5 @@
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
 import 'package:mentorcraft2/theme/color.dart';
 import 'package:provider/provider.dart';
 
@@ -10,6 +8,9 @@ import '../../core/models/user_role.dart';
 import '../../core/provider/theme_privider.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../teacher/provider/teacher_provider.dart';
+
+// 🔑 Import global key from main.dart
+import '../../../main.dart'; // Adjust path based on your folder structure
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -229,7 +230,6 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-
   Widget _buildLanguageTile(BuildContext context) {
     return _buildSettingTile(
       context,
@@ -251,55 +251,52 @@ class SettingsScreen extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ElevatedButton.icon(
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: const Text('Confirm Logout'),
-                content: const Text(
-                  'Are you sure you want to logout from your account?',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('CANCEL'),
-                  ),
-                  TextButton(
-                    onPressed: () async{
-                      Navigator.pop(context);
-                      // Implement logout logic here
-                      // Perform logout
-                      final authProvider = Provider.of<SimpleAuthProvider>(context, listen: false);
-                      await authProvider.signOut();
-
-                      await FirebaseAuth.instance.signOut();
-                      Provider.of<TeacherProvider>(context, listen: false).clearData();
-
-
-                      // Navigate to LoginScreen
-                      Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (context) =>  LoginScreen(selectedRole: UserRole.teacher,)),
-                      (route) => false,
-                      );
-
-                      // Show confirmation snackbar
-                      ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Logged out successfully')),
-                      );
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (dialogContext) {
+                return AlertDialog(
+                  title: const Text('Confirm Logout'),
+                  content: const Text('Are you sure you want to logout from your account?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(dialogContext).pop();
                       },
-                    style: TextButton.styleFrom(
-                      // backgroundColor: w,
+                      child: const Text('CANCEL'),
                     ),
-                    child: const Text('LOGOUT'),
-                  ),
-                ],
-              );
-            },
-          );
-        },
-        icon: const Icon(Icons.logout,color: Colors.white,),
-        label: const Text('Logout',style: TextStyle(color: Colors.white),),
+                    TextButton(
+                      onPressed: () async {
+                        Navigator.of(dialogContext).pop();
+
+                        final authProvider = Provider.of<SimpleAuthProvider>(context, listen: false);
+                        await authProvider.signOut();
+                        await FirebaseAuth.instance.signOut();
+
+                        Provider.of<TeacherProvider>(context, listen: false).clearData();
+
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(
+                            builder: (context) => LoginScreen(selectedRole: UserRole.teacher),
+                          ),
+                              (route) => false,
+                        );
+
+                        // Show snackbar via global messenger key (optional)
+                        // scaffoldMessengerKey.currentState?.showSnackBar(
+                        //   const SnackBar(content: Text('Logged out successfully')),
+                        // );
+                      },
+                      child: const Text('LOGOUT'),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+
+          icon: const Icon(Icons.logout, color: Colors.white),
+        label: const Text('Logout', style: TextStyle(color: Colors.white)),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           minimumSize: const Size(double.infinity, 48),
