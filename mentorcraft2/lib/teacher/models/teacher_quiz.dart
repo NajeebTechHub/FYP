@@ -54,6 +54,27 @@ class TeacherQuiz {
     );
   }
 
+  factory TeacherQuiz.fromMap(Map<String, dynamic> data, String id) {
+    return TeacherQuiz(
+      id: id,
+      title: data['title'] ?? '',
+      description: data['description'] ?? '',
+      courseId: data['courseId'] ?? '',
+      courseName: data['courseName'] ?? '',
+      questions: (data['questions'] as List<dynamic>? ?? [])
+          .map((q) => QuizQuestion.fromJson(q))
+          .toList(),
+      timeLimit: data['timeLimit'] ?? 60,
+      attempts: data['attempts'] ?? 3,
+      passingPercentage: (data['passingPercentage'] ?? 70.0).toDouble(),
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      isActive: data['isActive'] ?? true,
+      totalSubmissions: data['totalSubmissions'] ?? 0,
+      teacherId: data['teacherId'] ?? '',
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -107,7 +128,6 @@ class TeacherQuiz {
     );
   }
 }
-
 
 class QuizQuestion {
   final String id;
@@ -211,8 +231,6 @@ class QuizSubmission {
   }
 }
 
-
-
 class StudentAnswer {
   final String questionId;
   final int selectedAnswer;
@@ -241,6 +259,56 @@ class StudentAnswer {
       'selectedAnswer': selectedAnswer,
       'isCorrect': isCorrect,
       'points': points,
+    };
+  }
+}
+
+class QuizAttempt {
+  final String quizId;
+  final String quizTitle;
+  final double score;
+  final double percentage;
+  final bool passed;
+  final DateTime attemptedAt;
+  final int timeSpent;
+  final int attemptNumber;
+
+  QuizAttempt({
+    required this.quizId,
+    required this.quizTitle,
+    required this.score,
+    required this.percentage,
+    required this.passed,
+    required this.attemptedAt,
+    required this.timeSpent,
+    required this.attemptNumber,
+  });
+
+  factory QuizAttempt.fromJson(Map<String, dynamic> json) {
+    return QuizAttempt(
+      quizId: json['quizId'] ?? '',
+      quizTitle: json['quizTitle'] ?? '',
+      score: (json['score'] ?? 0.0).toDouble(),
+      percentage: (json['percentage'] ?? 0.0).toDouble(),
+      passed: json['passed'] ?? false,
+      attemptedAt: json['attemptedAt'] is Timestamp
+          ? (json['attemptedAt'] as Timestamp).toDate()
+          : DateTime.tryParse(json['attemptedAt']) ?? DateTime.now(),
+      timeSpent: json['timeSpent'] ?? 0,
+      attemptNumber: json['attemptNumber'] ?? 1,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'quizId': quizId,
+      'quizTitle': quizTitle,
+      'score': score,
+      'percentage': percentage,
+      'passed': passed,
+      'attemptedAt': attemptedAt.toIso8601String(),
+      'timeSpent': timeSpent,
+      'attemptNumber': attemptNumber,
     };
   }
 }

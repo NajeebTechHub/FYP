@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:mentorcraft2/student/screens/my_courses_screen.dart';
 import 'package:mentorcraft2/theme/color.dart';
+
+import '../../screens/courses.dart';
+import '../../student_main_app.dart';
 
 class HeroSection extends StatelessWidget {
   const HeroSection({Key? key}) : super(key: key);
@@ -42,7 +46,11 @@ class HeroSection extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.of(context).push(MaterialPageRoute(builder: (context){
+                return StudentMainScreen(initialIndex: 1);
+              }));
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: AppColors.primary,

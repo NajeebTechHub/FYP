@@ -191,7 +191,7 @@ class _EditCourseScreenState extends State<EditCourseScreen> {
         isPublished: widget.course.isPublished,
         enrolledStudents: widget.course.enrolledStudents,
         rating: widget.course.rating,
-        totalRatings: widget.course.totalRatings,
+        totalRating: widget.course.totalRating,
         modules: widget.course.modules,
       );
 

@@ -68,7 +68,7 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> with SingleTickerProv
         rating: (courseData['rating'] ?? 0).toDouble(),
         teacherId: courseData['teacherId'] ?? '',
         teacherName: courseData['teacherName'] ?? '',
-        totalRating: courseData['totalRating'] ?? 0,
+        totalRating: (courseData['totalRating'] ?? 0).toDouble(),
         createdAt: _parseDate(courseData['createdAt']),
         updatedAt: _parseDate(courseData['updatedAt']),
         duration: courseData['duration'] ?? '',

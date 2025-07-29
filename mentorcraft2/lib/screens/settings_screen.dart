@@ -1,16 +1,20 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:mentorcraft2/screens/privacy_policy_screen.dart';
+import 'package:mentorcraft2/screens/refund_policy.dart';
+import 'package:mentorcraft2/screens/services_delievery_policy.dart';
+import 'package:mentorcraft2/screens/term&condition_screen.dart';
 import 'package:mentorcraft2/theme/color.dart';
 import 'package:provider/provider.dart';
 
-import '../../auth/simple_auth_provider.dart';
-import '../../core/models/user_role.dart';
-import '../../core/provider/theme_privider.dart';
-import '../../screens/auth/login_screen.dart';
-import '../../teacher/provider/teacher_provider.dart';
-
-// 🔑 Import global key from main.dart
-import '../../../main.dart'; // Adjust path based on your folder structure
+import '../auth/simple_auth_provider.dart';
+import '../core/models/user_role.dart';
+import '../core/provider/theme_provider.dart';
+import '../student/screens/profile_screen.dart';
+import 'FAQs_screen.dart';
+import 'auth/login_screen.dart';
+import '../teacher/provider/teacher_provider.dart';
+import 'contact_support_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -19,8 +23,10 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: const Text('Settings',style: TextStyle(color: AppColors.background,fontWeight: FontWeight.bold),),
         backgroundColor: AppColors.darkBlue,
+        centerTitle: true,
+        iconTheme: IconThemeData(color: AppColors.background),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -35,7 +41,9 @@ class SettingsScreen extends StatelessWidget {
                   'Manage Profile',
                   'Edit your personal information',
                   Icons.person_outline,
-                  onTap: () => Navigator.pushNamed(context, '/profile'),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (context){
+                    return ProfileScreen();
+                  })),
                 ),
               ],
             ),
@@ -76,15 +84,46 @@ class SettingsScreen extends StatelessWidget {
                   'Privacy Policy',
                   'Read our privacy policy',
                   Icons.privacy_tip_outlined,
-                  onTap: () => Navigator.pushNamed(context, '/privacy'),
+                  onTap: () {
+                    Navigator.of(context).push(MaterialPageRoute(builder: (context){
+                      return PrivacyPolicyScreen();
+                    }));
+                  },
                 ),
                 _buildSettingTile(
                   context,
                   'Terms & Conditions',
                   'View terms of service',
                   Icons.description_outlined,
-                  onTap: () => Navigator.pushNamed(context, '/terms'),
+                  onTap: () {
+                    Navigator.of(context).push(MaterialPageRoute(builder: (context){
+                      return TermsAndConditionsScreen();
+                    }));
+                  },
                 ),
+                _buildSettingTile(
+                  context,
+                  'Return & Refund Policy',
+                  'View Return & Refund Policy',
+                  Icons.receipt_long_outlined,
+                  onTap: () {
+                    Navigator.of(context).push(MaterialPageRoute(builder: (context){
+                      return RefundPolicyScreen();
+                    }));
+                  },
+                ),
+                _buildSettingTile(
+                  context,
+                  'Service Delivery Policy',
+                  'View Service Delivery Policy',
+                  Icons.local_shipping_outlined,
+                  onTap: () {
+                    Navigator.of(context).push(MaterialPageRoute(builder: (context){
+                      return ServiceDeliveryPolicyScreen();
+                    }));
+                  },
+                ),
+
               ],
             ),
             _buildSettingSection(
@@ -96,14 +135,22 @@ class SettingsScreen extends StatelessWidget {
                   'FAQs',
                   'Frequently asked questions',
                   Icons.help_outline,
-                  onTap: () => Navigator.pushNamed(context, '/faqs'),
+                  onTap: () {
+                    Navigator.of(context).push(MaterialPageRoute(builder: (context){
+                      return FAQScreen();
+                    }));
+                  },
                 ),
                 _buildSettingTile(
                   context,
                   'Contact Support',
                   'Get help from our team',
                   Icons.support_agent_outlined,
-                  onTap: () => Navigator.pushNamed(context, '/support'),
+                  onTap: () {
+                    Navigator.of(context).push(MaterialPageRoute(builder: (context){
+                      return ContactSupportScreen();
+                    }));
+                  },
                 ),
               ],
             ),

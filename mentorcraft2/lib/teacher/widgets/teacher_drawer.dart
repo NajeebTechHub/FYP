@@ -172,7 +172,7 @@ class TeacherDrawer extends StatelessWidget {
                       title: 'Switch to Student View',
                       onTap: () {
                         Navigator.pop(context);
-                        authProvider.switchToStudent();
+                        // authProvider.switchToStudent();
                         // Navigate to student interface
                         Navigator.pushReplacementNamed(context, '/student');
                       },

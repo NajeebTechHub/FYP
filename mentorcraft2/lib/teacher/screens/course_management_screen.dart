@@ -118,6 +118,13 @@ class _CourseManagementScreenState extends State<CourseManagementScreen>
   }
 
   Widget _buildCourseList(List<TeacherCourse> courses) {
+    final provider = Provider.of<TeacherProvider>(context, listen: false);
+
+    // Show loading indicator if not loaded yet
+    if (!provider.areCoursesLoaded) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     final filteredCourses = courses.where((course) {
       return course.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           course.category.toLowerCase().contains(_searchQuery.toLowerCase());
@@ -135,7 +142,9 @@ class _CourseManagementScreenState extends State<CourseManagementScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              _searchQuery.isEmpty ? 'No courses found' : 'No courses match your search',
+              _searchQuery.isEmpty
+                  ? 'No courses found'
+                  : 'No courses match your search',
               style: TextStyle(
                 fontSize: 18,
                 color: Colors.grey[600],
@@ -179,13 +188,14 @@ class _CourseManagementScreenState extends State<CourseManagementScreen>
             },
             onTogglePublish: () {
               Provider.of<TeacherProvider>(context, listen: false)
-                  .toggleCoursePublished(course.id,!course.isPublished);
+                  .toggleCoursePublished(course.id, !course.isPublished);
             },
           ),
         );
       },
     );
   }
+
 
   void _showDeleteConfirmation(BuildContext context, TeacherCourse course) {
     showDialog(

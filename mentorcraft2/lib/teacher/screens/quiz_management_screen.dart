@@ -18,8 +18,10 @@ class _QuizManagementScreenState extends State<QuizManagementScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<TeacherProvider>(context, listen: false).fetchQuizzes();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final teacherProvider = Provider.of<TeacherProvider>(context, listen: false);
+      await teacherProvider.initializeData();
+      await teacherProvider.fetchQuizzes();
     });
   }
 
@@ -29,26 +31,31 @@ class _QuizManagementScreenState extends State<QuizManagementScreen> {
       backgroundColor: Colors.grey[50],
       body: Consumer<TeacherProvider>(
         builder: (context, teacherProvider, child) {
-          if (teacherProvider.isQuizLoading) {
+          final isLoading = teacherProvider.isQuizLoading;
+          final allQuizzes = teacherProvider.quizzes;
+
+          if (isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final allQuizzes = teacherProvider.quizzes;
+          if (allQuizzes.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.quiz_outlined, size: 64, color: Colors.grey[400]),
+                  SizedBox(height: 16),
+                  Text('No quizzes found',
+                      style: TextStyle(fontSize: 18, color: Colors.grey[600], fontWeight: FontWeight.w500)),
+                  SizedBox(height: 8),
+                  Text('Create your first quiz to get started',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[500])),
+                ],
+              ),
+            );
+          }
 
-          return allQuizzes.isEmpty
-              ? Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.quiz_outlined, size: 64, color: Colors.grey[400]),
-                const SizedBox(height: 16),
-                Text('No quizzes found', style: TextStyle(fontSize: 18, color: Colors.grey[600], fontWeight: FontWeight.w500)),
-                const SizedBox(height: 8),
-                Text('Create your first quiz to get started', style: TextStyle(fontSize: 14, color: Colors.grey[500])),
-              ],
-            ),
-          )
-              : ListView.builder(
+          return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: allQuizzes.length,
             itemBuilder: (context, index) {
@@ -57,10 +64,13 @@ class _QuizManagementScreenState extends State<QuizManagementScreen> {
                 padding: const EdgeInsets.only(bottom: 16),
                 child: QuizCard(
                   quiz: quiz,
-                  // onEdit: () {},
-                  // onDelete: () => teacherProvider.deleteQuiz(quiz.id),
                   onViewSubmissions: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => QuizSubmissionsScreen(quiz: quiz)));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => QuizSubmissionsScreen(quiz: quiz),
+                      ),
+                    );
                   },
                   onToggleActive: () {
                     final updatedQuiz = TeacherQuiz(
@@ -89,7 +99,10 @@ class _QuizManagementScreenState extends State<QuizManagementScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateQuizScreen()));
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CreateQuizScreen()),
+          );
         },
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.quiz, color: Colors.white),

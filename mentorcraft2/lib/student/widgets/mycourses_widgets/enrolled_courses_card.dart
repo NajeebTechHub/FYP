@@ -14,12 +14,16 @@ class EnrolledCourseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDark ? AppColors.darkBackground : AppColors.white;
+    final textColor = isDark ? AppColors.textLight : AppColors.textPrimary;
+    final subTextColor = isDark ? AppColors.textLight.withOpacity(0.7) : AppColors.textSecondary;
+
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      color: backgroundColor,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -60,7 +64,11 @@ class EnrolledCourseCard extends StatelessWidget {
                     children: [
                       Text(
                         '${(enrolledCourse.progress * 100).toInt()}% Complete',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -87,29 +95,33 @@ class EnrolledCourseCard extends StatelessWidget {
               children: [
                 Text(
                   enrolledCourse.course.title,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(Icons.person, size: 16, color: AppColors.textSecondary),
+                    Icon(Icons.person, size: 16, color: subTextColor),
                     const SizedBox(width: 4),
                     Text(
                       enrolledCourse.course.teacherName,
-                      style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                      style: TextStyle(fontSize: 14, color: subTextColor),
                     ),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(Icons.access_time, size: 16, color: AppColors.textSecondary),
+                    Icon(Icons.access_time, size: 16, color: subTextColor),
                     const SizedBox(width: 4),
                     Text(
                       'Last accessed: ${_formatDate(enrolledCourse.lastAccessedDate)}',
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      style: TextStyle(fontSize: 12, color: subTextColor),
                     ),
                   ],
                 ),
@@ -125,7 +137,10 @@ class EnrolledCourseCard extends StatelessWidget {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       elevation: 0,
                     ),
-                    child: const Text('Continue Learning', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'Continue Learning',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
               ],
@@ -140,5 +155,4 @@ class EnrolledCourseCard extends StatelessWidget {
     if (date == null) return 'Unknown';
     return '${date.day}/${date.month}/${date.year}';
   }
-
 }

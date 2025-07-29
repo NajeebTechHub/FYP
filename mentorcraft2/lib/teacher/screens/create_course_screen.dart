@@ -125,7 +125,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
         isPublished: isPublished,
         enrolledStudents: 0,
         rating: 0.0,
-        totalRatings: 0,
+        totalRating: 0,
         modules: [],
       );
 

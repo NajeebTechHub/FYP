@@ -29,23 +29,7 @@ class SimpleAuthProvider extends ChangeNotifier {
     try {
       final currentUser = _auth.currentUser;
       if (currentUser != null) {
-        final prefs = await SharedPreferences.getInstance();
-        final roleStr = prefs.getString('user_role');
-        final role = UserRole.values.firstWhere(
-              (r) => r.toString().split('.').last == roleStr,
-          orElse: () => UserRole.student,
-        );
-
-        final appUser = AppUser(
-          id: currentUser.uid,
-          email: currentUser.email ?? '',
-          displayName: currentUser.displayName ?? '',
-          role: role,
-          createdAt: DateTime.now(), // optional: fetch from Firestore if needed
-          isEmailVerified: currentUser.emailVerified,
-        );
-
-        _setUser(appUser);
+        await _restoreUserFromPreferences(currentUser);
       }
     } catch (e) {
       _setError('Failed to initialize: $e');
@@ -53,6 +37,29 @@ class SimpleAuthProvider extends ChangeNotifier {
       _isInitialized = true;
       _setLoading(false);
     }
+  }
+
+  /// ✅ Public method to manually restore session (used in `main.dart`)
+  Future<void> restoreSession() async {
+    final currentUser = _auth.currentUser;
+    if (currentUser != null) {
+      await _restoreUserFromPreferences(currentUser);
+    }
+  }
+
+  Future<void> _restoreUserFromPreferences(User currentUser) async {
+    final role = await getSavedRole();
+
+    final appUser = AppUser(
+      id: currentUser.uid,
+      email: currentUser.email ?? '',
+      displayName: currentUser.displayName ?? '',
+      role: role,
+      createdAt: DateTime.now(),
+      isEmailVerified: currentUser.emailVerified,
+    );
+
+    _setUser(appUser);
   }
 
   Future<bool> signUp({
@@ -72,8 +79,7 @@ class SimpleAuthProvider extends ChangeNotifier {
 
       await credential.user!.updateDisplayName(displayName);
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_role', role.toString().split('.').last);
+      await saveSelectedRole(role); // 🔐 Save role
 
       final appUser = AppUser(
         id: credential.user!.uid,
@@ -107,19 +113,15 @@ class SimpleAuthProvider extends ChangeNotifier {
         password: password,
       );
 
-      final prefs = await SharedPreferences.getInstance();
-      final roleStr = prefs.getString('user_role') ?? 'student';
-      final role = UserRole.values.firstWhere(
-            (r) => r.toString().split('.').last == roleStr,
-        orElse: () => UserRole.student,
-      );
+      final role = await getSavedRole();
+      await saveSelectedRole(role); // ✅ Fix: Save role again after login
 
       final appUser = AppUser(
         id: credential.user!.uid,
         email: credential.user!.email ?? '',
         displayName: credential.user!.displayName ?? '',
         role: role,
-        createdAt: DateTime.now(), // fallback (can be updated from Firestore)
+        createdAt: DateTime.now(),
         isEmailVerified: credential.user!.emailVerified,
       );
 
@@ -170,6 +172,25 @@ class SimpleAuthProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_completed', true);
   }
+
+  Future<void> saveSelectedRole(UserRole role) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_role', role.name);
+  }
+
+  Future<UserRole> getSavedRole() async {
+    final prefs = await SharedPreferences.getInstance();
+    final roleStr = prefs.getString('user_role')?.toLowerCase() ?? 'student';
+
+    for (var role in UserRole.values) {
+      if (role.name.toLowerCase() == roleStr) {
+        return role;
+      }
+    }
+    return UserRole.student;
+  }
+
+
 
   void _setUser(AppUser? user) {
     _user = user;

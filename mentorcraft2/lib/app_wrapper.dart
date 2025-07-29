@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:mentorcraft2/auth/simple_auth_provider.dart';
-import 'package:mentorcraft2/core/utils/app_router.dart';
-import 'package:mentorcraft2/teacher/provider/teacher_provider.dart';
-import 'package:mentorcraft2/teacher/screens/teacher_main_screen.dart';
-import 'package:mentorcraft2/student/student_main_app.dart';
-import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
+
 import 'auth/auth_provider.dart';
+import 'auth/simple_auth_provider.dart';
 import 'core/models/user_role.dart';
 import 'models/app_user.dart';
 import 'screens/onboarding/onboarding_screen.dart';
+import 'student/student_main_app.dart';
+import 'teacher/provider/teacher_provider.dart';
+import 'teacher/screens/teacher_main_screen.dart';
 import 'theme/color.dart';
 
 class AppWrapper extends StatelessWidget {
@@ -17,34 +17,14 @@ class AppWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<FirebaseApp>(
+    return FutureBuilder(
       future: Firebase.initializeApp(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return MaterialApp(
             home: Scaffold(
               body: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: Colors.red,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Failed to initialize Firebase',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Error: ${snapshot.error}',
-                      style: const TextStyle(color: Colors.red),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
+                child: Text('Firebase Init Error: ${snapshot.error}'),
               ),
             ),
           );
@@ -53,56 +33,16 @@ class AppWrapper extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.done) {
           return MultiProvider(
             providers: [
+              ChangeNotifierProvider(create: (_) => SimpleAuthProvider()..restoreSession()),
               ChangeNotifierProvider(create: (_) => AuthProvider()),
+              ChangeNotifierProvider(create: (_) => TeacherProvider()),
             ],
             child: const MentorCraftApp(),
           );
         }
 
-        return MaterialApp(
-          home: Scaffold(
-            backgroundColor: Colors.white,
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.school,
-                      size: 64,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'MentorCraft',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const CircularProgressIndicator(
-                    color: AppColors.primary,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Initializing...',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+        return const MaterialApp(
+          home: LoadingScreen(),
         );
       },
     );
@@ -137,13 +77,6 @@ class MentorCraftApp extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        // cardTheme: CardTheme(
-        //   elevation: 2,
-        //   shape: RoundedRectangleBorder(
-        //     borderRadius: BorderRadius.circular(12),
-        //   ),
-        //   margin: const EdgeInsets.symmetric(vertical: 8),
-        // ),
         iconTheme: const IconThemeData(
           color: AppColors.darkBlue,
           size: 24,
@@ -159,50 +92,38 @@ class AuthenticationWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<AuthProvider, TeacherProvider>(
-      builder: (context, authProvider, teacherProvider, child) {
-        if (!authProvider.isInitialized || authProvider.isLoading) {
-          return const LoadingScreen();
-        }
+    final simpleAuth = Provider.of<SimpleAuthProvider>(context);
+    final authProvider = Provider.of<AuthProvider>(context);
+    final teacherProvider = Provider.of<TeacherProvider>(context);
 
-        if (!authProvider.isAuthenticated) {
-          return FutureBuilder<bool>(
-            future: authProvider.checkOnboardingStatus(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const LoadingScreen();
-              }
+    if (!simpleAuth.isInitialized || !authProvider.isInitialized) {
+      return const LoadingScreen();
+    }
 
-              final onboardingCompleted = snapshot.data ?? false;
+    if (!authProvider.isAuthenticated) {
+      return const OnboardingScreen();
+    }
 
-              return onboardingCompleted
-                  ? RoleSelectionScreen()
-                  : const OnboardingScreen();
-            },
-          );
-        }
+    final user = simpleAuth.user;
+    if (user == null) return const OnboardingScreen();
 
-        final user = authProvider.user!;
-        final role = user.role;
+    authProvider.setUser(user);
+    final role = user.role;
 
-        if (role == UserRole.teacher) {
-          // Initialize teacherProvider only once
-          if (!teacherProvider.isInitialized) {
-            teacherProvider.initializeDataWithUser(user);
-            return const LoadingScreen(); // Give time for async to complete
-          }
+    if (role == UserRole.teacher) {
+      if (!teacherProvider.isInitialized) {
+        teacherProvider.initializeDataWithUser(user);
+        return const LoadingScreen();
+      }
 
-          // ✅ Now only load TeacherMainScreen when teacherId is ready
-          if (teacherProvider.teacherId.isEmpty) {
-            return const LoadingScreen();
-          }
+      if (teacherProvider.teacherId.isEmpty) {
+        return const LoadingScreen();
+      }
 
-          return const TeacherMainScreen();
-        }
+      return const TeacherMainScreen();
+    }
 
-        return const StudentMainScreen();
-      },
-    );
+    return const StudentMainScreen();
   }
 }
 
@@ -239,9 +160,7 @@ class LoadingScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            const CircularProgressIndicator(
-              color: AppColors.primary,
-            ),
+            const CircularProgressIndicator(color: AppColors.primary),
             const SizedBox(height: 16),
             Text(
               'Loading...',

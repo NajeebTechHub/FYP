@@ -25,8 +25,17 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
   @override
   void initState() {
     super.initState();
-    final teacherProvider = Provider.of<TeacherProvider>(context, listen: false);
-    teacherProvider.fetchCourses(); // Make sure courses are loaded
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final teacherProvider = Provider.of<TeacherProvider>(context, listen: false);
+      await teacherProvider.initializeData();
+      await teacherProvider.fetchCourses();
+
+      if (teacherProvider.courses.isNotEmpty) {
+        setState(() {
+          _selectedCourse = teacherProvider.courses.first.id;
+        });
+      }
+    });
   }
 
   @override
@@ -42,9 +51,7 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create Quiz'),
-      ),
+      appBar: AppBar(title: const Text('Create Quiz')),
       body: Consumer<TeacherProvider>(
         builder: (context, teacherProvider, child) {
           final courses = teacherProvider.courses;
@@ -56,29 +63,30 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Dropdown
-                  DropdownButtonFormField<String>(
-                    value: _selectedCourse,
-                    decoration: const InputDecoration(
-                      labelText: 'Select Course',
-                      border: OutlineInputBorder(),
+                  if (courses.isEmpty)
+                    const Text('No courses available', style: TextStyle(color: Colors.red)),
+                  if (courses.isNotEmpty)
+                    DropdownButtonFormField<String>(
+                      value: _selectedCourse,
+                      decoration: const InputDecoration(
+                        labelText: 'Select Course',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: courses.map((course) {
+                        return DropdownMenuItem(
+                          value: course.id,
+                          child: Text(course.title),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedCourse = value;
+                        });
+                      },
+                      validator: (value) => value == null ? 'Please select a course' : null,
                     ),
-                    items: courses.map((course) {
-                      return DropdownMenuItem(
-                        value: course.id,
-                        child: Text(course.title),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedCourse = value;
-                      });
-                    },
-                    validator: (value) => value == null ? 'Please select a course' : null,
-                  ),
                   const SizedBox(height: 16),
 
-                  // Quiz Title
                   TextFormField(
                     controller: _titleController,
                     decoration: const InputDecoration(
@@ -89,7 +97,6 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Description
                   TextFormField(
                     controller: _descriptionController,
                     maxLines: 3,
@@ -100,7 +107,6 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Settings
                   Row(
                     children: [
                       _numberField(controller: _timeLimitController, label: 'Time Limit'),
@@ -112,7 +118,6 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Questions Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -127,7 +132,6 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Question Cards
                   ..._questions.asMap().entries.map((entry) {
                     final index = entry.key;
                     final question = entry.value;
@@ -136,7 +140,6 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
 
                   const SizedBox(height: 32),
 
-                  // Create & Draft Buttons
                   Row(
                     children: [
                       Expanded(
@@ -185,8 +188,9 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
           children: [
             IconButton(onPressed: () => _editQuestion(index), icon: const Icon(Icons.edit)),
             IconButton(
-                onPressed: () => setState(() => _questions.removeAt(index)),
-                icon: const Icon(Icons.delete, color: Colors.red)),
+              onPressed: () => setState(() => _questions.removeAt(index)),
+              icon: const Icon(Icons.delete, color: Colors.red),
+            ),
           ],
         ),
       ),

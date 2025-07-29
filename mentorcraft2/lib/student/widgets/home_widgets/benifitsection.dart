@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mentorcraft2/student/student_main_app.dart';
 
 class BenefitsSection extends StatelessWidget {
   const BenefitsSection({super.key});
@@ -23,12 +24,14 @@ class BenefitsSection extends StatelessWidget {
           horizontal: 24,
           vertical: isTablet ? 48 : 32,
         ),
-        child: isTablet ? _buildTabletLayout() : _buildMobileLayout(),
+        child: isTablet
+            ? _buildTabletLayout(context)
+            : _buildMobileLayout(context),
       ),
     );
   }
 
-  Widget _buildTabletLayout() {
+  Widget _buildTabletLayout(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -39,105 +42,56 @@ class BenefitsSection extends StatelessWidget {
         const SizedBox(width: 48),
         Expanded(
           flex: 2,
-          child: _buildCallToAction(),
+          child: _buildCallToAction(context),
         ),
       ],
     );
   }
 
-  Widget _buildMobileLayout() {
+  Widget _buildMobileLayout(BuildContext context) {
     return Column(
       children: [
         _buildFeatureCards(),
         const SizedBox(height: 32),
-        _buildCallToAction(),
+        _buildCallToAction(context),
       ],
     );
   }
 
   Widget _buildFeatureCards() {
     return Column(
-      children: [
-        _buildFeatureCard(
-          'Experience',
-          'Expert instructors with real-world experience guiding your learning journey.',
-          Icons.emoji_events,
+      children: const [
+        ExpandableFeatureCard(
+          title: 'Experience',
+          description: 'Expert instructors with real-world experience guiding your learning journey.',
+          expandedText:
+          'Our instructors have spent years in the industry, solving real-world problems. '
+              'They bring practical insights, mentorship, and case studies to help you succeed.',
+          icon: Icons.emoji_events,
         ),
-        const SizedBox(height: 16),
-        _buildFeatureCard(
-          'Education',
-          'High-quality curriculum designed for mastering in-demand skills.',
-          Icons.school,
+        SizedBox(height: 16),
+        ExpandableFeatureCard(
+          title: 'Education',
+          description: 'High-quality curriculum designed for mastering in-demand skills.',
+          expandedText:
+          'The curriculum is crafted by domain experts and updated regularly to match industry trends. '
+              'Each module includes hands-on projects, assessments, and learning paths.',
+          icon: Icons.school,
         ),
-        const SizedBox(height: 16),
-        _buildFeatureCard(
-          'Certificate',
-          'Earn industry-recognized certificates to showcase your expertise.',
-          Icons.workspace_premium,
+        SizedBox(height: 16),
+        ExpandableFeatureCard(
+          title: 'Certificate',
+          description: 'Earn industry-recognized certificates to showcase your expertise.',
+          expandedText:
+          'On course completion, you’ll receive a digital certificate that can be shared on LinkedIn, resumes, and job platforms. '
+              'These certificates are backed by our partner institutions.',
+          icon: Icons.workspace_premium,
         ),
       ],
     );
   }
 
-  Widget _buildFeatureCard(String title, String description, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            icon,
-            color: Colors.white,
-            size: 32,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            description,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
-              fontSize: 16,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextButton(
-            onPressed: () {},
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF4A90E2),
-              padding: EdgeInsets.zero,
-            ),
-            child: const Text(
-              'See More ...',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCallToAction() {
+  Widget _buildCallToAction(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -176,7 +130,14 @@ class BenefitsSection extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => StudentMainScreen(initialIndex: 1),
+                  ),
+                );
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF0A1F44),
                 foregroundColor: Colors.white,
@@ -196,6 +157,99 @@ class BenefitsSection extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
                 ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ExpandableFeatureCard extends StatefulWidget {
+  final String title;
+  final String description;
+  final IconData icon;
+  final String expandedText;
+
+  const ExpandableFeatureCard({
+    Key? key,
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.expandedText,
+  }) : super(key: key);
+
+  @override
+  State<ExpandableFeatureCard> createState() => _ExpandableFeatureCardState();
+}
+
+class _ExpandableFeatureCardState extends State<ExpandableFeatureCard> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(widget.icon, color: Colors.white, size: 32),
+          const SizedBox(height: 16),
+          Text(
+            widget.title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            widget.description,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 16,
+              height: 1.5,
+            ),
+          ),
+          if (_expanded) ...[
+            const SizedBox(height: 12),
+            Text(
+              widget.expandedText,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.9),
+                fontSize: 15,
+                height: 1.5,
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _expanded = !_expanded;
+              });
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF4A90E2),
+              padding: EdgeInsets.zero,
+            ),
+            child: Text(
+              _expanded ? 'See Less ...' : 'See More ...',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),

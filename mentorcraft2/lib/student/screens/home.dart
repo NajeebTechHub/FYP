@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../student_main_app.dart';
 import '../widgets/home_widgets/benifitsection.dart';
 import '../models/course.dart';
 import '../widgets/home_widgets/coursecard.dart';
@@ -7,6 +9,7 @@ import '../widgets/home_widgets/footerwidget.dart';
 import '../widgets/home_widgets/form.dart';
 import '../widgets/home_widgets/herosection.dart';
 import '../widgets/home_widgets/testemonialcarosal.dart';
+import 'course_details_screen.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -38,7 +41,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       _buildPopularCourses(context),
                       const SizedBox(height: 32),
                       const BenefitsSection(),
-                      // const ownface(),
                       const SizedBox(height: 32),
                       const TestimonialCarousel(),
                       const SizedBox(height: 32),
@@ -105,64 +107,108 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildPopularCourses(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Popular Courses',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            TextButton(
-              onPressed: () {},
-              child: const Text('View All'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
+    return FutureBuilder<QuerySnapshot>(
+      future: FirebaseFirestore.instance
+          .collection('courses')
+          .orderBy('rating', descending: true)
+          .limit(3)
+          .get(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-        // Wrapping ListView in a constrained box
-        Container(
-          height: 270, // Ensure ListView has a fixed height
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: 4,
-            itemBuilder: (context, index) {
-              return Container(
-                width: 300, // Fixed width for each course card
-                margin: const EdgeInsets.only(right: 12), // Space between cards
-                child: CourseCard(
-                  course: Course(
-                    id: 'course$index',
-                    // name: 'Complete Web Development Bootcamp',
-                    description: 'Learn web development from scratch',
-                    price: 99.99,
-                    duration: '12 weeks',
-                    level: 'Beginner',
-                    rating: 4.5,
-                    // studentsCount: 1234,
-                    // instructor: 'John Doe',
-                    // tags: ['Web Developme: '' 'JavaScript', : ''L', 'CSS'],
-                    imageUrl: '',
-                    title: '',
-                    teacherId: '',
-                    teacherName: '',
-                    totalRating: 0.0,
-                    createdAt: DateTime.now(),
-                    updatedAt: DateTime.now(),
-                    enrolledStudents: 0,
-                    modules: [],
+        if (snapshot.hasError || !snapshot.hasData) {
+          return const Center(child: Text("Failed to load popular courses"));
+        }
+
+        final docs = snapshot.data!.docs;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Popular Courses',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-              );
-            },
-          ),
-        ),
-      ],
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).push(MaterialPageRoute(builder: (context){
+                      return StudentMainScreen(initialIndex: 1);
+                    }));
+                  },
+                  child: const Text('View All'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 270,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: docs.length,
+                itemBuilder: (context, index) {
+                  final data = docs[index].data() as Map<String, dynamic>;
+
+                  final course = Course(
+                    id: docs[index].id,
+                    title: data['title'] ?? '',
+                    description: data['description'] ?? '',
+                    price: (data['price'] as num?)?.toDouble() ?? 0.0,
+                    duration: data['duration'] ?? '',
+                    level: data['level'] ?? '',
+                    rating: (data['rating'] as num?)?.toDouble() ?? 0.0,
+                    imageUrl: data['imageUrl'] ?? '',
+                    teacherId: data['teacherId'] ?? '',
+                    teacherName: data['teacherName'] ?? '',
+                    totalRating: (data['totalRating'] as num?)?.toDouble() ?? 0.0,
+                    createdAt: parseDate(data['createdAt']),
+                    updatedAt: parseDate(data['updatedAt']),
+                    enrolledStudents: data['enrolledStudents'] ?? 0,
+                    modules: [],
+                  );
+
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CourseDetailsScreen(course: course),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 300,
+                      margin: const EdgeInsets.only(right: 12),
+                      child: CourseCard(course: course),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
+
+
+
+
+  DateTime parseDate(dynamic value) {
+    if (value is Timestamp) {
+      return value.toDate();
+    } else if (value is String) {
+      return DateTime.tryParse(value) ?? DateTime.now();
+    } else {
+      return DateTime.now();
+    }
+  }
+
+
 }

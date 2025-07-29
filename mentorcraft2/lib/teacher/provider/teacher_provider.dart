@@ -1,15 +1,19 @@
+// All your imports (no change)
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../models/app_user.dart';
 import '../../services/course_service.dart';
 import '../../services/progress_service.dart';
 import '../../services/quize_service.dart';
 import '../models/teacher_announcement.dart';
+import 'package:mentorcraft2/teacher/models/dashboard.dart';
 import '../models/teacher_course.dart';
 import '../models/teacher_quiz.dart';
 import '../models/student_progress.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class TeacherProvider with ChangeNotifier {
   final CourseService _courseService = CourseService();
@@ -20,10 +24,37 @@ class TeacherProvider with ChangeNotifier {
   StreamSubscription<List<TeacherQuiz>>? _quizSubscription;
   StreamSubscription<QuerySnapshot>? _announcementSubscription;
 
+  String _teacherId = '';
+
+  bool _isStatsLoaded = false;
+  bool get isStatsLoaded => _isStatsLoaded;
+
+  bool _areCoursesLoaded = false;
+  bool get areCoursesLoaded => _areCoursesLoaded;
+
+  bool _areQuizzesLoaded = false;
+  bool get areQuizzesLoaded => _areQuizzesLoaded;
+
+  bool _areAnnouncementsLoaded = false;
+  bool get areAnnouncementsLoaded => _areAnnouncementsLoaded;
+
+  int _totalStudents = 0;
+  int _totalCourses = 0;
+  double _averageRating = 0.0;
+
+  int get totalStudents => _totalStudents;
+  int get totalCourses => _totalCourses;
+  double get averageRating => _averageRating;
+
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+
+  bool _isStudentProgressLoaded = false;
+  bool get isStudentProgressLoaded => _isStudentProgressLoaded;
+
+
   bool _disposed = false;
 
-  // Dynamic fields
-  String _teacherId = '';
   String _teacherName = '';
   String _teacherEmail = '';
   String _teacherAvatar = '';
@@ -32,31 +63,20 @@ class TeacherProvider with ChangeNotifier {
   bool _isQuizLoading = false;
   bool get isQuizLoading => _isQuizLoading;
 
+  bool _isCoursesLoading = false;
+  bool get isCoursesLoading => _isCoursesLoading;
+
+  bool _isAnnouncementsLoading = false;
+  bool get isAnnouncementsLoading => _isAnnouncementsLoading;
+
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
-
-  final DashboardStats _dashboardStats = DashboardStats(
-    totalCourses: 0,
-    publishedCourses: 0,
-    draftCourses: 0,
-    totalStudents: 0,
-    activeStudents: 0,
-    totalRevenue: 0,
-    monthlyRevenue: 0,
-    totalQuizzes: 0,
-    pendingSubmissions: 0,
-    averageRating: 0,
-    totalReviews: 0,
-    monthlyEarnings: [],
-    topCourses: [],
-  );
 
   List<TeacherCourse> _courses = [];
   List<TeacherQuiz> _quizzes = [];
   List<StudentProgress> _studentProgress = [];
   List<TeacherAnnouncement> _announcements = [];
 
-  // Clears all data when user logs out or switches
   void clearData() {
     _teacherId = '';
     _teacherName = '';
@@ -76,26 +96,26 @@ class TeacherProvider with ChangeNotifier {
     _safeNotifyListeners();
   }
 
-  // Initialize using custom user
   Future<void> initializeDataWithUser(AppUser user) async {
     clearData();
-
     _teacherId = user.id;
     _teacherName = user.displayName;
     _teacherEmail = user.email;
-    _teacherAvatar = user.avatar.isNotEmpty ? user.avatar : 'assets/placeholder.jpg';
+    _teacherAvatar = user.avatar.isNotEmpty
+        ? Supabase.instance.client.storage.from('profile-images').getPublicUrl(user.avatar)
+        : 'assets/placeholder.jpg';
     _isInitialized = true;
 
     await fetchCourses();
     subscribeToCourses(_teacherId);
     subscribeToQuizzes(_teacherId);
-    await fetchStudentProgress();
+    await fetchStudentProgress(_teacherId);
     subscribeToAnnouncements();
+    await fetchCourseStats();
 
     _safeNotifyListeners();
   }
 
-  // ✅ Fallback init using FirebaseAuth user
   Future<void> initializeData() async {
     clearData();
 
@@ -111,8 +131,9 @@ class TeacherProvider with ChangeNotifier {
     await fetchCourses();
     subscribeToCourses(_teacherId);
     subscribeToQuizzes(_teacherId);
-    await fetchStudentProgress();
+    await fetchStudentProgress(_teacherId);
     subscribeToAnnouncements();
+    await fetchCourseStats();
 
     _safeNotifyListeners();
   }
@@ -121,38 +142,63 @@ class TeacherProvider with ChangeNotifier {
     subscribeToCourses(_teacherId);
   }
 
-  // GETTERS
   String get teacherId => _teacherId;
   String get teacherName => _teacherName;
   String get teacherEmail => _teacherEmail;
   String get teacherAvatar => _teacherAvatar;
   String get teacherBio => _teacherBio;
 
-  DashboardStats get dashboardStats => _dashboardStats;
+  DashboardStats get dashboardStats {
+    return DashboardStats(
+      totalCourses: _totalCourses,
+      totalStudents: _totalStudents,
+      averageRating: _averageRating,
+      publishedCourses: getCoursesByStatus('published').length,
+      draftCourses: getCoursesByStatus('draft').length,
+      totalRevenue: 0.0,
+      monthlyRevenue: 0.0,
+      totalQuizzes: _quizzes.length,
+      pendingSubmissions: 0,
+      totalReviews: 0,
+      monthlyEarnings: [],
+      topCourses: [],
+      activeStudents: 0,
+    );
+  }
+
   List<TeacherCourse> get courses => _courses;
   List<TeacherQuiz> get quizzes => _quizzes;
   List<StudentProgress> get studentProgress => _studentProgress;
   List<TeacherAnnouncement> get announcements => _announcements;
 
-  // COURSES
   Future<void> fetchCourses([String? teacherId]) async {
+    _isCoursesLoading = true;
+    _safeNotifyListeners();
     try {
       _courses = await _courseService.getCoursesByTeacher(teacherId ?? _teacherId);
-      _safeNotifyListeners();
     } catch (e) {
       debugPrint("Error fetching courses: $e");
+    } finally {
+      _isCoursesLoading = false;
+      _safeNotifyListeners();
     }
   }
 
   void subscribeToCourses(String teacherId) {
+    _isCoursesLoading = true;
+    _areCoursesLoaded = false;
+    _safeNotifyListeners();
+
     _courseSubscription?.cancel();
-    _courseSubscription = _courseService
-        .listenToCoursesByTeacher(teacherId)
-        .listen((updatedCourses) {
+    _courseSubscription = _courseService.listenToCoursesByTeacher(teacherId).listen((updatedCourses) {
       _courses = updatedCourses;
+      _isCoursesLoading = false;
+      _areCoursesLoaded = true;
+      fetchCourseStats();
       _safeNotifyListeners();
     });
   }
+
 
   Future<void> addCourse(TeacherCourse course) async {
     await _courseService.addCourse(course);
@@ -171,27 +217,43 @@ class TeacherProvider with ChangeNotifier {
     await _courseService.toggleCoursePublished(courseId, publish);
   }
 
-  // QUIZZES
   void subscribeToQuizzes(String teacherId) {
+    _isQuizLoading = true;
+    _areQuizzesLoaded = false;
+    _safeNotifyListeners();
+
     _quizSubscription?.cancel();
     _quizSubscription = _quizService.listenToQuizzesByTeacher(teacherId).listen((updatedQuizzes) {
       _quizzes = updatedQuizzes;
+      _isQuizLoading = false;
+      _areQuizzesLoaded = true;
+      fetchCourseStats();
       _safeNotifyListeners();
     });
   }
 
   Future<void> fetchQuizzes() async {
+    _quizSubscription?.cancel();
     _isQuizLoading = true;
-    _safeNotifyListeners();
+    notifyListeners();
+
     try {
-      _quizzes = await _quizService.getQuizzesByTeacher(_teacherId);
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('quizzes')
+          .where('teacherId', isEqualTo: _teacherId)
+          .get();
+
+      _quizzes = querySnapshot.docs
+          .map((doc) => TeacherQuiz.fromMap(doc.data(), doc.id))
+          .toList();
     } catch (e) {
-      debugPrint("Error fetching quizzes: $e");
-    } finally {
-      _isQuizLoading = false;
-      _safeNotifyListeners();
+      print('Error fetching quizzes: $e');
     }
+
+    _isQuizLoading = false;
+    notifyListeners();
   }
+
 
   Future<void> addQuiz(TeacherQuiz quiz) async {
     await _quizService.addQuiz(quiz);
@@ -212,18 +274,142 @@ class TeacherProvider with ChangeNotifier {
     }
   }
 
-  // STUDENT PROGRESS
-  Future<void> fetchStudentProgress() async {
+  Future<void> fetchStudentProgress(String currentTeacherId) async {
     try {
-      _studentProgress = await _progressService.getStudentProgressByTeacher(_teacherId);
-      _safeNotifyListeners();
+      _studentProgress.clear();
+      _courses.clear();
+      _isStudentProgressLoaded = false;
+      notifyListeners();
+
+      final enrollmentSnapshot = await FirebaseFirestore.instance
+          .collectionGroup('enrolledUsers')
+          .get();
+
+      for (var doc in enrollmentSnapshot.docs) {
+        final data = doc.data();
+        final courseId = doc.reference.parent.parent?.id;
+        if (courseId == null) continue;
+
+        final courseDoc = await FirebaseFirestore.instance
+            .collection('courses')
+            .doc(courseId)
+            .get();
+
+        if (!courseDoc.exists) continue;
+        final courseData = courseDoc.data()!;
+        final courseTeacherId = courseData['teacherId'];
+
+        if (courseTeacherId != currentTeacherId) continue;
+
+        final courseName = courseData['title'] ?? 'Unknown Course';
+
+        List<CourseModule> parsedModules = [];
+        final rawModules = courseData['modules'];
+        if (rawModules is List) {
+          parsedModules = rawModules
+              .whereType<Map<String, dynamic>>()
+              .map((e) => CourseModule.fromJson(e))
+              .toList();
+        }
+
+        if (_courses.every((c) => c.id != courseId)) {
+          _courses.add(
+            TeacherCourse(
+              id: courseId,
+              title: courseData['title'] ?? '',
+              description: courseData['description'] ?? '',
+              category: courseData['category'] ?? '',
+              level: courseData['level'] ?? '',
+              price: (courseData['price'] ?? 0).toDouble(),
+              duration: courseData['duration'] ?? '',
+              imageUrl: courseData['imageUrl'] ?? '',
+              teacherId: courseTeacherId,
+              teacherName: courseData['teacherName'] ?? '',
+              createdAt: _parseTimestamp(courseData['createdAt']),
+              updatedAt: _parseTimestamp(courseData['updatedAt']),
+              isPublished: courseData['isPublished'] ?? false,
+              enrolledStudents: courseData['enrolledStudents'] is List
+                  ? (courseData['enrolledStudents'] as List).length
+                  : 0,
+              rating: (courseData['rating'] ?? 0).toDouble(),
+              totalRating: courseData['totalRating'] ?? 0,
+              modules: parsedModules,
+            ),
+          );
+        }
+
+        List<Map<String, dynamic>> parsedQuizAttempts = [];
+        if (data['quizAttempts'] is List) {
+          parsedQuizAttempts = (data['quizAttempts'] as List)
+              .whereType<Map<String, dynamic>>()
+              .toList();
+        }
+
+        final student = StudentProgress(
+          id: '',
+          studentId: data['userId']?.toString() ?? '',
+          studentName: data['studentName']?.toString() ?? 'Unknown',
+          studentEmail: data['studentEmail']?.toString() ?? '@gmail.com',
+          studentAvatar: data['studentAvatar']?.toString() ?? '',
+          courseId: courseId,
+          courseName: courseName,
+          progressPercentage: (data['progress'] is num)
+              ? (data['progress'] as num).toDouble() * 100
+              : 0.0,
+          enrolledAt: data['enrolledAt'] is Timestamp
+              ? (data['enrolledAt'] as Timestamp).toDate()
+              : DateTime.now(),
+          lastAccessedAt: data['lastAccessedAt'] is Timestamp
+              ? (data['lastAccessedAt'] as Timestamp).toDate()
+              : DateTime.now(),
+          completedLessons: (data['completedLessons'] is List)
+              ? (data['completedLessons'] as List).length
+              : 0,
+          totalLessons: data['totalLessons'] is int
+              ? data['totalLessons'] as int
+              : 0,
+          overallGrade: (data['overallGrade'] is num)
+              ? (data['overallGrade'] as num).toDouble()
+              : 0.0,
+          timeSpent: data['timeSpent'] is int ? data['timeSpent'] as int : 0,
+          lessonProgress: [],
+          quizAttempts: parsedQuizAttempts,
+          status: data['status']?.toString() ?? 'enrolled',
+        );
+
+        _studentProgress.add(student);
+      }
+
+      _isStudentProgressLoaded = true;
+      notifyListeners();
     } catch (e) {
-      debugPrint("Error fetching student progress: $e");
+      _isStudentProgressLoaded = true;
+      notifyListeners();
     }
   }
 
-  // ANNOUNCEMENTS
+
+  DateTime _parseTimestamp(dynamic value) {
+    if (value is Timestamp) {
+      return value.toDate();
+    } else if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (_) {
+        return DateTime.now();
+      }
+    }
+    return DateTime.now();
+  }
+
+
+
+
   void subscribeToAnnouncements() {
+    _isAnnouncementsLoading = true;
+    _areAnnouncementsLoaded = false;
+    _safeNotifyListeners();
+
     _announcementSubscription?.cancel();
     _announcementSubscription = FirebaseFirestore.instance
         .collection('announcements')
@@ -235,11 +421,17 @@ class TeacherProvider with ChangeNotifier {
         final data = doc.data();
         return TeacherAnnouncement.fromMap(data, doc.id);
       }).toList();
+
+      _isAnnouncementsLoading = false;
+      _areAnnouncementsLoaded = true;
       _safeNotifyListeners();
     });
   }
 
+
   Future<void> fetchAnnouncements() async {
+    _isAnnouncementsLoading = true;
+    _safeNotifyListeners();
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('announcements')
@@ -251,18 +443,16 @@ class TeacherProvider with ChangeNotifier {
         final data = doc.data();
         return TeacherAnnouncement.fromMap(data, doc.id);
       }).toList();
-
-      _safeNotifyListeners();
     } catch (e) {
       debugPrint('Error fetching announcements: $e');
+    } finally {
+      _isAnnouncementsLoading = false;
+      _safeNotifyListeners();
     }
   }
 
   Future<void> addAnnouncement(TeacherAnnouncement announcement) async {
-    await FirebaseFirestore.instance
-        .collection('announcements')
-        .doc(announcement.id)
-        .set(announcement.toMap());
+    await FirebaseFirestore.instance.collection('announcements').doc(announcement.id).set(announcement.toMap());
   }
 
   Future<void> deleteAnnouncement(String id) async {
@@ -280,7 +470,6 @@ class TeacherProvider with ChangeNotifier {
     }
   }
 
-  // FILTERS
   List<TeacherCourse> getCoursesByStatus(String status) {
     switch (status.toLowerCase()) {
       case 'published':
@@ -300,10 +489,108 @@ class TeacherProvider with ChangeNotifier {
     return _quizzes.where((q) => q.courseId == courseId).toList();
   }
 
-  // INTERNAL
   void _safeNotifyListeners() {
     if (!_disposed) notifyListeners();
   }
+
+  Future<void> fetchCourseStats() async {
+    try {
+      _isStatsLoaded = false;
+      final snapshot = await FirebaseFirestore.instance
+          .collection('courses')
+          .where('teacherId', isEqualTo: _teacherId)
+          .get();
+
+      int totalCourses = snapshot.docs.length;
+      int totalStudents = 0;
+      double totalRating = 0.0;
+      int ratingCount = 0;
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final enrolled = (data['enrolledStudents'] is num)
+            ? (data['enrolledStudents'] as num).toInt()
+            : 0;
+        final rating = (data['rating'] ?? 0.0).toDouble();
+        final reviewCount = (data['totalRating'] ?? 0).toInt();
+
+        totalStudents += enrolled;
+
+        if (rating > 0 && reviewCount > 0) {
+          totalRating += rating;
+          ratingCount++;
+        }
+      }
+
+      _totalCourses = totalCourses;
+      _totalStudents = totalStudents;
+      _averageRating = ratingCount > 0 ? (totalRating / ratingCount) : 0.0;
+
+      _isStatsLoaded = true;
+      notifyListeners();
+    } catch (e) {
+      print('Error in fetchCourseStats: $e');
+    }
+  }
+
+
+  List<MonthlyEarning> _monthlyEarningsList = [];
+  List<MonthlyEarning> get monthlyEarningsList => _monthlyEarningsList;
+
+  Future<void> fetchRealEarningsForChart() async {
+    final userId = FirebaseAuth.instance.currentUser!.uid;
+    final now = DateTime.now();
+    final startOfMonth = DateTime(now.year, now.month, 1);
+
+    final coursesSnapshot = await FirebaseFirestore.instance
+        .collection('courses')
+        .where('teacherId', isEqualTo: userId)
+        .get();
+
+    // Step 1: Map for earnings and enrollments per day
+    Map<String, double> earningsPerDay = {};
+    Map<String, int> enrollmentsPerDay = {};
+
+    for (var courseDoc in coursesSnapshot.docs) {
+      final courseId = courseDoc.id;
+      final price = (courseDoc['price'] ?? 0).toDouble();
+
+      final enrolledSnapshot = await FirebaseFirestore.instance
+          .collection('courses')
+          .doc(courseId)
+          .collection('enrolledUsers')
+          .where('enrolledAt', isGreaterThanOrEqualTo: startOfMonth)
+          .get();
+
+      for (var enrolledDoc in enrolledSnapshot.docs) {
+        final enrolledAt = (enrolledDoc['enrolledAt'] as Timestamp).toDate();
+        final day = enrolledAt.day.toString(); // like "1", "2", etc.
+
+        final earning = price * 0.7;
+
+        earningsPerDay.update(day, (value) => value + earning, ifAbsent: () => earning);
+        enrollmentsPerDay.update(day, (count) => count + 1, ifAbsent: () => 1);
+      }
+    }
+
+    // Step 2: Convert to MonthlyEarning list
+    _monthlyEarningsList = earningsPerDay.entries.map((entry) {
+      final day = entry.key;
+      final amount = entry.value;
+      final enrollments = enrollmentsPerDay[day] ?? 0;
+
+      return MonthlyEarning(
+        month: day,
+        amount: amount,
+        enrollments: enrollments,
+      );
+    }).toList()
+      ..sort((a, b) => int.parse(a.month).compareTo(int.parse(b.month)));
+
+    notifyListeners();
+  }
+
+
 
   @override
   void dispose() {

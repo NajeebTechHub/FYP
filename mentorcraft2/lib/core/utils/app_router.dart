@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:mentorcraft2/models/app_user.dart';
+import 'package:mentorcraft2/core/models/user_role.dart';
 import 'package:mentorcraft2/screens/auth/login_screen.dart';
-import '../../models/app_user.dart';
-import '../models/user_role.dart';
-import '../../teacher/screens/teacher_main_screen.dart';
+import 'package:mentorcraft2/student/student_main_app.dart';
+import 'package:mentorcraft2/teacher/screens/teacher_main_screen.dart';
+import 'package:provider/provider.dart';
+
+import '../../auth/simple_auth_provider.dart';
 
 class AppRouter {
   static Widget getHomeScreen(AppUser? user) {
@@ -12,13 +16,11 @@ class AppRouter {
 
     switch (user.role) {
       case UserRole.teacher:
-        // return const TeacherMainScreen();
-        return LoginScreen(selectedRole: UserRole.teacher,);
+        return const TeacherMainScreen(); // ✅ correct main screen
       case UserRole.student:
-        // return const StudentMainScreen();
-        return LoginScreen(selectedRole: UserRole.student,);
+        return const StudentMainScreen(); // ✅ correct main screen
       case UserRole.admin:
-        return const TeacherMainScreen(); // Admin uses teacher interface for now
+        return const TeacherMainScreen(); // ✅ fallback to teacher
     }
   }
 }
@@ -196,7 +198,9 @@ class RoleSelectionScreen extends StatelessWidget {
     );
   }
 
-  void _selectRole(BuildContext context, UserRole role) {
+  void _selectRole(BuildContext context, UserRole role) async {
+    final authProvider = Provider.of<SimpleAuthProvider>(context, listen: false);
+    await authProvider.saveSelectedRole(role);
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -206,6 +210,3 @@ class RoleSelectionScreen extends StatelessWidget {
   }
 
 }
-
-
-

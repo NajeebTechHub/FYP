@@ -17,9 +17,9 @@ class FooterWidget extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.asset('assets/images/logo/Vector.png',height: 30,),
+              Image.asset('assets/images/logo/Vector.png',height: 30,color: Colors.white,),
               const SizedBox(width: 8),
-              Image.asset('assets/images/logo/MENTOR CRAFT.png'),
+              Image.asset('assets/images/logo/MENTOR CRAFT.png',color: Colors.white,),
             ],
           ),
           const SizedBox(height: 24),

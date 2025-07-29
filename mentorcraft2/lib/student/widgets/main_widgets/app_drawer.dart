@@ -1,15 +1,19 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:mentorcraft2/core/models/user_role.dart';
+import 'package:mentorcraft2/screens/help&support.dart';
 import 'package:mentorcraft2/student/screens/certificate_screen.dart';
 import 'package:mentorcraft2/student/screens/forum_screen.dart';
 import 'package:mentorcraft2/student/screens/learning_history_screen.dart';
-import 'package:mentorcraft2/student/screens/payment_historu_screen.dart';
+import 'package:mentorcraft2/student/screens/payment_history_screen.dart';
 import 'package:mentorcraft2/student/screens/progress_tracking_screen.dart';
 import 'package:mentorcraft2/student/screens/quiz_screen.dart';
-import 'package:mentorcraft2/student/screens/settings_screen.dart';
+import 'package:mentorcraft2/screens/settings_screen.dart';
 import 'package:mentorcraft2/theme/color.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 import '../../../auth/simple_auth_provider.dart';
+import '../../../screens/about_mentorcraft.dart';
 import '../../../screens/auth/login_screen.dart';
 
 class AppDrawer extends StatelessWidget {
@@ -57,18 +61,38 @@ class AppDrawer extends StatelessWidget {
   }
 
   Widget _buildDrawerHeader(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    final String displayName = user?.displayName ?? 'No Name';
+    final String email = user?.email ?? 'No Email';
+    final String uid = user?.uid ?? '';
+
+    final String imageUrl =
+        'https://tqzoozpckrmmprwnhweg.supabase.co/storage/v1/object/public/profile-images/public/$uid.jpg';
+
     return UserAccountsDrawerHeader(
-      accountName: const Text('John Doe',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-      accountEmail:
-      const Text('john.doe@example.com', style: TextStyle(fontSize: 14)),
+      accountName: Text(
+        displayName,
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+      ),
+      accountEmail: Text(
+        email,
+        style: const TextStyle(fontSize: 14),
+      ),
       currentAccountPicture: CircleAvatar(
         backgroundColor: Colors.white,
         child: ClipOval(
-          child: Container(
-            color: AppColors.lightBlue.withOpacity(0.2),
-            child:
-            const Icon(Icons.person, size: 50, color: AppColors.darkBlue),
+          child: Image.network(
+            imageUrl,
+            width: 90,
+            height: 90,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                color: AppColors.lightBlue.withOpacity(0.2),
+                child: const Icon(Icons.person, size: 50, color: AppColors.darkBlue),
+              );
+            },
           ),
         ),
       ),
@@ -78,21 +102,11 @@ class AppDrawer extends StatelessWidget {
           image: const AssetImage('assets/images/image_1742380932561.png'),
           fit: BoxFit.cover,
           colorFilter: ColorFilter.mode(
-              AppColors.darkBlue.withOpacity(0.85), BlendMode.srcOver),
-        ),
-      ),
-      otherAccountsPictures: [
-        CircleAvatar(
-          backgroundColor: Colors.white70,
-          child: IconButton(
-            icon: const Icon(Icons.edit, color: AppColors.darkBlue, size: 18),
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/profile');
-            },
+            AppColors.darkBlue.withOpacity(0.85),
+            BlendMode.srcOver,
           ),
         ),
-      ],
+      ),
     );
   }
 
@@ -237,12 +251,22 @@ class AppDrawer extends StatelessWidget {
           Icons.help_outline,
           'Help & Support',
           '/help',
+          onTap: () {
+            Navigator.of(context).push(MaterialPageRoute(builder: (context){
+              return HelpAndSupportScreen();
+            }));
+          },
         ),
         _buildDrawerItem(
           context,
           Icons.info_outline,
           'About MentorCraft',
           '/about',
+          onTap: () {
+            Navigator.of(context).push(MaterialPageRoute(builder: (context){
+              return AboutMentorCraftScreen();
+            }));
+          },
         ),
       ],
     );

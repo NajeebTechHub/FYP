@@ -30,7 +30,7 @@ class QuizCard extends StatelessWidget {
             color: Colors.grey.withOpacity(0.1),
             spreadRadius: 1,
             blurRadius: 6,
-            offset: const Offset(0, 3),
+            offset: const Offset(0, 8),
           ),
         ],
       ),

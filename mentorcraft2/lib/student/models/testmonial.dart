@@ -8,6 +8,7 @@ class Testimonial {
   // final String avatarUrl;
   final String role;
   final ImageProvider avatarImage;
+  final uid;
 
   Testimonial({
     required this.id,
@@ -16,5 +17,6 @@ class Testimonial {
     // required this.avatarUrl,
     required this.role,
     required this.avatarImage,
+    required this.uid,
   });
 }

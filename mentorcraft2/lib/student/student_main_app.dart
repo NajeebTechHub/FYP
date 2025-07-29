@@ -22,14 +22,13 @@ class _StudentMainScreenState extends State<StudentMainScreen> with SingleTicker
   late int _selectedIndex;
   late AnimationController _drawerAnimController;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  bool _isLoggedIn = true; // Simulation for auth state
+  bool _isLoggedIn = true;
 
   @override
   void initState() {
     super.initState();
     _selectedIndex = widget.initialIndex;
 
-    // Animation controller for drawer icons
     _drawerAnimController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -63,7 +62,10 @@ class _StudentMainScreenState extends State<StudentMainScreen> with SingleTicker
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: Text(_screenTitles[_selectedIndex]),
+        backgroundColor: AppColors.primary,
+        title: Text(_screenTitles[_selectedIndex],style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
+        centerTitle: true,
+        iconTheme: IconThemeData(color: Colors.white),
         leading: AnimatedBuilder(
           animation: _drawerAnimController,
           builder: (context, child) {

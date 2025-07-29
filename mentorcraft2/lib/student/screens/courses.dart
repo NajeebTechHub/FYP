@@ -1,5 +1,4 @@
-import 'dart:convert';
-
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -19,58 +18,22 @@ class CoursesScreen extends StatefulWidget {
 
 class _CoursesScreenState extends State<CoursesScreen> {
   String? _selectedCategory;
-  String? _selectedLevel;
-  String? _selectedDuration;
-  String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+  final ValueNotifier<String> _searchQueryNotifier = ValueNotifier<String>('');
 
   final List<String> _categories = [
-    'Development', 'Design', 'Business', 'Marketing',
+    'Development', 'UI/UX', 'App dev', 'Machine Learning',
     'Photography', 'Music', 'Health & Fitness', 'Data Science'
   ];
 
-  final List<String> _levels = ['Beginner', 'Intermediate', 'Advanced', 'All Levels'];
-
-  final List<String> _durations = [
-    'Less than 1 hour',
-    '1-3 hours',
-    '3-6 hours',
-    '6-10 hours',
-    'Over 10 hours'
-  ];
-
-  List<Course> _filteredCourses = [];
+  Timer? _debounce;
 
   @override
   void dispose() {
     _searchController.dispose();
+    _debounce?.cancel();
+    _searchQueryNotifier.dispose();
     super.dispose();
-  }
-
-  void _filterCourses(List<Course> allCourses) {
-    setState(() {
-      _filteredCourses = allCourses.where((course) {
-        bool matchesCategory = _selectedCategory == null || course.title.toLowerCase().contains(_selectedCategory!.toLowerCase());
-        bool matchesLevel = _selectedLevel == null || course.level == _selectedLevel;
-        bool matchesDuration = _selectedDuration == null || course.duration == _selectedDuration;
-        bool matchesSearch = _searchQuery.isEmpty ||
-            course.teacherName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            course.description.toLowerCase().contains(_searchQuery.toLowerCase());
-
-        return matchesCategory && matchesLevel && matchesDuration && matchesSearch;
-      }).toList();
-    });
-  }
-
-  void _clearFilters(List<Course> allCourses) {
-    setState(() {
-      _selectedCategory = null;
-      _selectedLevel = null;
-      _selectedDuration = null;
-      _searchQuery = '';
-      _searchController.clear();
-      _filteredCourses = List.from(allCourses);
-    });
   }
 
   DateTime _parseDate(dynamic value) {
@@ -78,6 +41,42 @@ class _CoursesScreenState extends State<CoursesScreen> {
     if (value is Timestamp) return value.toDate();
     if (value is String) return DateTime.tryParse(value) ?? DateTime.now();
     return DateTime.now();
+  }
+
+  void _clearFilters() {
+    _searchController.clear();
+    _searchQueryNotifier.value = '';
+    setState(() {
+      _selectedCategory = null;
+    });
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Search courses, instructors...',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: _searchQueryNotifier.value.isNotEmpty
+              ? IconButton(
+            icon: const Icon(Icons.clear),
+            onPressed: _clearFilters,
+          )
+              : null,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        onChanged: (value) {
+          if (_debounce?.isActive ?? false) _debounce!.cancel();
+          _debounce = Timer(const Duration(milliseconds: 400), () {
+            _searchQueryNotifier.value = value;
+          });
+        },
+      ),
+    );
   }
 
   @override
@@ -92,8 +91,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-
-          if (snapshot.hasError) {
+          if (snapshot.hasError || !snapshot.hasData) {
             return const Center(child: Text("Error loading courses."));
           }
 
@@ -110,59 +108,44 @@ class _CoursesScreenState extends State<CoursesScreen> {
               imageUrl: data['imageUrl'] ?? '',
               teacherId: data['teacherId'] ?? '',
               teacherName: data['teacherName'] ?? '',
-              totalRating: (data['totalRating'] ?? 0).toDouble(),
+              totalRating: (data['totalRating'] as num?)?.toDouble() ?? 0.0,
               enrolledStudents: (data['enrolledStudents'] ?? 0).toInt(),
               createdAt: _parseDate(data['createdAt']),
-              updatedAt: _parseDate(data['updatedAt']), modules: [],
+              updatedAt: _parseDate(data['updatedAt']),
+              modules: [],
             );
           }).toList();
-
-          if (_filteredCourses.isEmpty) {
-            _filteredCourses = List.from(allCourses);
-          }
 
           return SingleChildScrollView(
             child: Column(
               children: [
-                _buildSearchBar(allCourses),
+                _buildSearchBar(),
                 FilterSection(
                   selectedCategory: _selectedCategory,
-                  selectedLevel: _selectedLevel,
-                  selectedDuration: _selectedDuration,
-                  searchQuery: _searchQuery,
                   categories: _categories,
-                  levels: _levels,
-                  durations: _durations,
-                  totalCourses: allCourses.length,
-                  filteredCoursesCount: _filteredCourses.length,
                   onCategorySelected: (category) {
                     setState(() {
                       _selectedCategory = category;
-                      _filterCourses(allCourses);
-                    });
-                  },
-                  onLevelSelected: (level) {
-                    setState(() {
-                      _selectedLevel = level;
-                      _filterCourses(allCourses);
-                    });
-                  },
-                  onDurationSelected: (duration) {
-                    setState(() {
-                      _selectedDuration = duration;
-                      _filterCourses(allCourses);
-                    });
-                  },
-                  onClearFilters: () => _clearFilters(allCourses),
-                  onSearchQueryRemoved: (_) {
-                    setState(() {
-                      _searchQuery = '';
-                      _searchController.clear();
-                      _filterCourses(allCourses);
                     });
                   },
                 ),
-                _buildCourseGrid(),
+                ValueListenableBuilder<String>(
+                  valueListenable: _searchQueryNotifier,
+                  builder: (context, searchQuery, _) {
+                    final filteredCourses = allCourses.where((course) {
+                      final matchCategory = _selectedCategory == null ||
+                          course.title.toLowerCase().contains(_selectedCategory!.toLowerCase());
+                      final matchSearch = searchQuery.isEmpty ||
+                          course.teacherName.toLowerCase().contains(searchQuery.toLowerCase()) ||
+                          course.description.toLowerCase().contains(searchQuery.toLowerCase());
+
+                      return matchCategory && matchSearch;
+                    }).toList();
+
+                    if (filteredCourses.isEmpty) return _buildEmptyState();
+                    return _buildCourseGrid(filteredCourses);
+                  },
+                ),
               ],
             ),
           );
@@ -171,50 +154,14 @@ class _CoursesScreenState extends State<CoursesScreen> {
     );
   }
 
-  Widget _buildSearchBar(List<Course> allCourses) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: TextField(
-        controller: _searchController,
-        decoration: InputDecoration(
-          hintText: 'Search courses, instructors...',
-          prefixIcon: const Icon(Icons.search),
-          suffixIcon: _searchQuery.isNotEmpty
-              ? IconButton(
-            icon: const Icon(Icons.clear),
-            onPressed: () {
-              setState(() {
-                _searchController.clear();
-                _searchQuery = '';
-                _filterCourses(allCourses);
-              });
-            },
-          )
-              : null,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        onChanged: (value) {
-          setState(() {
-            _searchQuery = value;
-            _filterCourses(allCourses);
-          });
-        },
-      ),
-    );
-  }
-
-  Widget _buildCourseGrid() {
-    if (_filteredCourses.isEmpty) return _buildEmptyState();
-
+  Widget _buildCourseGrid(List<Course> filteredCourses) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: ListView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        itemCount: _filteredCourses.length,
-        itemBuilder: (context, index) => _buildCourseCard(_filteredCourses[index]),
+        itemCount: filteredCourses.length,
+        itemBuilder: (context, index) => _buildCourseCard(filteredCourses[index]),
       ),
     );
   }
@@ -238,9 +185,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
-            onPressed: () {
-              _clearFilters(_filteredCourses);
-            },
+            onPressed: _clearFilters,
             icon: const Icon(Icons.refresh),
             label: const Text('Clear Filters'),
             style: ElevatedButton.styleFrom(
@@ -255,169 +200,210 @@ class _CoursesScreenState extends State<CoursesScreen> {
   }
 
   Widget _buildCourseCard(Course course) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => CourseDetailsScreen(course: course),
-          ),
-        );
-      },
-      child: Card(
-        elevation: 3,
-        margin: const EdgeInsets.only(bottom: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                  child: Image.network(
-                    course.imageUrl,
-                    height: 120,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 120,
-                      width: double.infinity,
-                      color: Colors.grey[300],
-                      alignment: Alignment.center,
-                      child: const Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
-                    ),
-                  ),
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('courses').doc(course.id).snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return const SizedBox(); // or loading indicator
+        }
 
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.darkBlue.withOpacity(0.8),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '\$${course.price.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
+        final data = snapshot.data!.data() as Map<String, dynamic>;
+        final updatedCourse = Course(
+          id: course.id,
+          title: data['title'] ?? '',
+          description: data['description'] ?? '',
+          imageUrl: data['imageUrl'] ?? '',
+          teacherId: '',
+          teacherName: data['teacherName'] ?? '',
+          price: (data['price'] as num).toDouble(),
+          duration: data['duration'] ?? '',
+          level: data['level'] ?? '',
+          totalRating: (data['totalRating'] as num?)?.toDouble() ?? 0.0,
+          createdAt: DateTime.now(),
+          modules: [],
+          enrolledStudents: data['enrolledStudents'] ?? 0,
+          updatedAt: DateTime.now(),
+          rating: (data['rating'] as num?)?.toDouble() ?? 0.0,
+        );
+
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => CourseDetailsScreen(course: updatedCourse),
+              ),
+            );
+          },
+          child: Card(
+            elevation: 3,
+            margin: const EdgeInsets.only(bottom: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                      child: Image.network(
+                        updatedCourse.imageUrl,
+                        height: 120,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          height: 120,
+                          width: double.infinity,
+                          color: Colors.grey[300],
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
+                        ),
                       ),
                     ),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.darkBlue.withOpacity(0.8),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '\$${updatedCourse.price.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        updatedCourse.title,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Instructor: ${updatedCourse.teacherName}',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        updatedCourse.description,
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.star, size: 16, color: Colors.amber),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${updatedCourse.rating.toStringAsFixed(1)} (${updatedCourse.totalRating.toInt()})',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(Icons.people_outline, size: 16, color: Colors.grey[600]),
+                          const SizedBox(width: 4),
+                          Text('${updatedCourse.enrolledStudents}', style: TextStyle(color: Colors.grey[600])),
+                          const Spacer(),
+                          ElevatedButton.icon(
+                            onPressed: () => _showRatingDialog(updatedCourse.id),
+                            icon: const Icon(Icons.star, size: 16, color: Colors.white),
+                            label: const Text("Rate", style: TextStyle(color: Colors.white)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              textStyle: const TextStyle(fontSize: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                              minimumSize: const Size(10, 30),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          _buildInfoChip(Icons.timer, updatedCourse.duration),
+                          const SizedBox(width: 8),
+                          _buildInfoChip(Icons.bar_chart, updatedCourse.level),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () async {
+                          final price = updatedCourse.price;
+                          final TextEditingController controller = TextEditingController();
+
+                          await showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text("Dummy Payment"),
+                              content: TextField(
+                                controller: controller,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(labelText: "Enter payment amount"),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text("Cancel"),
+                                ),
+                                TextButton(
+                                  onPressed: () async {
+                                    final enteredAmount = double.tryParse(controller.text);
+                                    if (enteredAmount == price) {
+                                      Navigator.pop(context);
+                                      final uid = FirebaseAuth.instance.currentUser!.uid;
+                                      final courseDoc = FirebaseFirestore.instance.collection('courses').doc(updatedCourse.id);
+                                      final enrolledUserRef = courseDoc.collection('enrolledUsers').doc(uid);
+                                      final alreadyEnrolled = await enrolledUserRef.get();
+
+                                      if (!alreadyEnrolled.exists) {
+                                        await enrolledUserRef.set({'enrolledAt': FieldValue.serverTimestamp()});
+                                        await courseDoc.update({'enrolledStudents': FieldValue.increment(1)});
+                                      }
+
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text("Enrollment successful")),
+                                      );
+                                    } else {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text("Incorrect amount!")),
+                                      );
+                                    }
+                                  },
+                                  child: const Text("Pay"),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.darkBlue,
+                          minimumSize: const Size(double.infinity, 36),
+                        ),
+                        child: const Text('Enroll Now', style: TextStyle(color: Colors.white)),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    course.title,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Instructor: ${course.teacherName}',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    course.description,
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(Icons.star, size: 16, color: Colors.amber),
-                      const SizedBox(width: 4),
-                      Text('${course.rating}', style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(width: 8),
-                      Icon(Icons.people_outline, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Text('${course.enrolledStudents}', style: TextStyle(color: Colors.grey[600])),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _buildInfoChip(Icons.timer, course.duration),
-                      const SizedBox(width: 8),
-                      _buildInfoChip(Icons.bar_chart, course.level),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: () async {
-                      final price = course.price;
-                      final TextEditingController controller = TextEditingController();
-
-                      await showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text("Dummy Payment"),
-                          content: TextField(
-                            controller: controller,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(labelText: "Enter payment amount"),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text("Cancel"),
-                            ),
-                            TextButton(
-                              onPressed: () async {
-                                final enteredAmount = double.tryParse(controller.text);
-                                if (enteredAmount == price) {
-                                  Navigator.pop(context); // close dialog
-                                  final uid = FirebaseAuth.instance.currentUser!.uid;
-
-                                  final courseDoc = FirebaseFirestore.instance.collection('courses').doc(course.id);
-
-                                  final enrolledUserRef = courseDoc.collection('enrolledUsers').doc(uid);
-                                  final alreadyEnrolled = await enrolledUserRef.get();
-
-                                  if (!alreadyEnrolled.exists) {
-                                    await enrolledUserRef.set({'enrolledAt': FieldValue.serverTimestamp()});
-                                    await courseDoc.update({'enrolledStudents': FieldValue.increment(1)});
-                                  }
-
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text("Enrollment successful")),
-                                  );
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text("Incorrect amount!")),
-                                  );
-                                }
-                              },
-                              child: const Text("Pay"),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.darkBlue,
-                      minimumSize: const Size(double.infinity, 36),
-                    ),
-                    child: const Text('Enroll Now', style: TextStyle(color: Colors.white)),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -434,6 +420,74 @@ class _CoursesScreenState extends State<CoursesScreen> {
           Icon(icon, size: 12, color: Colors.grey[700]),
           const SizedBox(width: 4),
           Text(label, style: TextStyle(fontSize: 10, color: Colors.grey[700])),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showRatingDialog(String courseId) async {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final courseRef = FirebaseFirestore.instance.collection('courses').doc(courseId);
+    final ratingRef = courseRef.collection('ratings').doc(uid);
+
+    final existingRatingDoc = await ratingRef.get();
+    if (existingRatingDoc.exists) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("You have already rated this course.")),
+      );
+      return;
+    }
+
+    final TextEditingController ratingController = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Rate this Course"),
+        content: TextField(
+          controller: ratingController,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(labelText: "Enter rating (1.0 to 5.0)"),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () async {
+              final rating = double.tryParse(ratingController.text);
+
+              if (rating != null && rating >= 1.0 && rating <= 5.0) {
+                await ratingRef.set({'rating': rating});
+
+                // Recalculate average
+                final ratingsSnapshot = await courseRef.collection('ratings').get();
+                final total = ratingsSnapshot.docs.fold<double>(
+                  0.0,
+                      (sum, doc) => sum + (doc['rating'] as num).toDouble(),
+                );
+                final avg = total / ratingsSnapshot.docs.length;
+
+                await courseRef.update({'rating': avg});
+
+                await courseRef.update({'totalRating': FieldValue.increment(1)});
+
+                Navigator.pop(context);
+
+                setState(() {});
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Rating submitted")),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Please enter a valid rating between 1.0 and 5.0")),
+                );
+              }
+            },
+            child: const Text("Submit"),
+          ),
         ],
       ),
     );

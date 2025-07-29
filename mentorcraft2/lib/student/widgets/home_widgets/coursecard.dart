@@ -24,30 +24,35 @@ class CourseCard extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-              child: Image.asset(
-                'assets/images/11.png',
-                height: 115,
+              child: Image.network(
+                course.imageUrl,
+                height: 120,
                 width: double.infinity,
                 fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  height: 120,
+                  width: double.infinity,
+                  color: Colors.grey[300],
+                  alignment: Alignment.center,
+                  child: const Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
+                ),
               ),
             ),
-
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    course.teacherName,
+                    course.title,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-
                   Text(
-                    course.teacherName,
+                    'Instructor: ${course.teacherName}',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -59,17 +64,26 @@ class CourseCard extends StatelessWidget {
                     children: [
                       const Icon(Icons.star, color: Colors.amber, size: 16),
                       Text(
-                        ' ${course.rating}',
+                        ' ${course.rating.toStringAsFixed(1)}',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       Text(
-                        ' • ${course.enrolledStudents} students',
+                        ' (${course.totalRating.toInt()})',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.people, size: 16, color: Colors.grey),
+                      Text(
+                        ' ${course.enrolledStudents}',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: AppColors.textSecondary,
                         ),
                       ),
                     ],
                   ),
+
 
                   Row(
                     children: [
@@ -105,7 +119,7 @@ class CourseCard extends StatelessWidget {
                         ),
                         child: const Text(
                           'Enroll',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold,color: Colors.white),
                         ),
                       ),
                     ],

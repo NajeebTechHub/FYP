@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mentorcraft2/student/models/course.dart';
 import '../models/teacher_course.dart';
 import '../../theme/color.dart';
 import '../screens/course_detail_screen.dart';
@@ -28,7 +29,6 @@ class TeacherCourseCard extends StatelessWidget {
           ),
         );
       },
-
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -66,11 +66,7 @@ class TeacherCourseCard extends StatelessWidget {
                     height: 120,
                     width: double.infinity,
                     color: Colors.blue.withOpacity(0.1),
-                    child: Icon(
-                      Icons.play_circle_outline,
-                      size: 48,
-                      color: Colors.blue,
-                    ),
+                    child: Icon(Icons.play_circle_outline, size: 48, color: Colors.blue),
                   ),
                 ),
                 Positioned(
@@ -141,7 +137,7 @@ class TeacherCourseCard extends StatelessWidget {
                     children: [
                       _buildStatItem(Icons.people, course.enrolledStudents.toString()),
                       const SizedBox(width: 16),
-                      _buildStatItem(Icons.star, '${course.rating.toStringAsFixed(1)} (${course.totalRatings})'),
+                      _buildStatItem(Icons.star, '${course.rating.toStringAsFixed(1)} (${course.totalRating})'),
                       const Spacer(),
                       Text(
                         'Updated ${_formatDate(course.updatedAt)}',
@@ -208,11 +204,7 @@ class TeacherCourseCard extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          size: 14,
-          color: Colors.grey[600],
-        ),
+        Icon(icon, size: 14, color: Colors.grey[600]),
         const SizedBox(width: 4),
         Text(
           text,
@@ -229,11 +221,7 @@ class TeacherCourseCard extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          size: 14,
-          color: Colors.grey[600],
-        ),
+        Icon(icon, size: 14, color: Colors.grey[600]),
         const SizedBox(width: 4),
         Text(
           text,

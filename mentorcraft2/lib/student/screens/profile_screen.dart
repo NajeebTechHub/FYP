@@ -4,7 +4,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mentorcraft2/theme/color.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -68,11 +67,9 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
           .from('profile-images')
           .getPublicUrl('public/$userId.jpg');
 
-      setState(() {
-        _profileImageUrl = imageUrl;
-      });
+      setState(() => _profileImageUrl = imageUrl);
     } catch (e) {
-      debugPrint("Failed to load image URL: $e");
+      debugPrint("Image fetch failed: $e");
     }
   }
 
@@ -98,12 +95,10 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       );
 
       final publicUrl = storage.from('profile-images').getPublicUrl(fileName);
-      setState(() {
-        _profileImageUrl = publicUrl;
-      });
+      setState(() => _profileImageUrl = publicUrl);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Image upload failed: ${e.toString()}')),
+        SnackBar(content: Text('Image upload failed: $e')),
       );
     } finally {
       setState(() => _isUploading = false);
@@ -117,12 +112,10 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     try {
       final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
       if (doc.exists) {
-        setState(() {
-          userRole = doc.data()?['role'] ?? '';
-        });
+        setState(() => userRole = doc.data()?['role'] ?? '');
       }
     } catch (e) {
-      debugPrint("Failed to fetch user role: $e");
+      debugPrint("User role fetch failed: $e");
     }
   }
 
@@ -154,10 +147,10 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                     children: [
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildStatisticsSection(context),
+                        child: _buildStatisticsSection(),
                       ),
                       const SizedBox(height: 24),
-                      _buildSettingsList(context),
+                      _buildSettingsList(),
                       const SizedBox(height: 24),
                     ],
                   ),
@@ -264,8 +257,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                   fontSize: isTablet ? 18 : 16,
                 ),
               ),
-              const SizedBox(height: 4),
-              if (userRole.isNotEmpty)
+              if (userRole.isNotEmpty) ...[
+                const SizedBox(height: 4),
                 Text(
                   userRole,
                   style: const TextStyle(
@@ -274,6 +267,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                     fontStyle: FontStyle.italic,
                   ),
                 ),
+              ],
             ],
           ),
         ),
@@ -292,7 +286,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     );
   }
 
-  Widget _buildStatisticsSection(BuildContext context) {
+  Widget _buildStatisticsSection() {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 4,
@@ -323,11 +317,10 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     );
   }
 
-  Widget _buildSettingsList(BuildContext context) {
+  Widget _buildSettingsList() {
     return Column(
       children: [
         _buildSettingsItem(
-          context,
           Icons.edit,
           "Edit Profile",
           "Update your name & email",
@@ -346,14 +339,11 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
           },
         ),
         _buildSettingsItem(
-          context,
           Icons.lock,
           "Change Password",
           "Update your password",
-          // onTap: () => Navigator.push(...),
         ),
         _buildSettingsItem(
-          context,
           Icons.notifications,
           "Notifications",
           "Manage your alerts",
@@ -363,7 +353,6 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   }
 
   Widget _buildSettingsItem(
-      BuildContext context,
       IconData icon,
       String title,
       String subtitle, {

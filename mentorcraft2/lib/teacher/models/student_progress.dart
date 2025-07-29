@@ -13,11 +13,11 @@ class StudentProgress {
   final DateTime lastAccessedAt;
   final int totalLessons;
   final int completedLessons;
-  final List<LessonProgress> lessonProgress;
-  final List<QuizAttempt> quizAttempts;
+  final List<Map<String, dynamic>> lessonProgress;
+  final List<Map<String, dynamic>> quizAttempts;
   final double overallGrade;
-  final String status; // enrolled, in_progress, completed, dropped
-  final int timeSpent; // total time in minutes
+  final String status;
+  final int timeSpent;
 
   StudentProgress({
     required this.id,
@@ -39,6 +39,15 @@ class StudentProgress {
     required this.timeSpent,
   });
 
+  static List<Map<String, dynamic>> _safeListOfMaps(dynamic value, String fieldName) {
+    if (value is List) {
+      return value.whereType<Map<String, dynamic>>().toList();
+    } else {
+      print('⚠️ $fieldName is not a List: ${value.runtimeType} → $value');
+      return [];
+    }
+  }
+
   factory StudentProgress.fromMap(Map<String, dynamic> map) {
     return StudentProgress(
       id: map['id'] ?? '',
@@ -49,133 +58,58 @@ class StudentProgress {
       courseId: map['courseId'] ?? '',
       courseName: map['courseName'] ?? '',
       progressPercentage: (map['progressPercentage'] ?? 0.0).toDouble(),
-      enrolledAt: (map['enrolledAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      lastAccessedAt: (map['lastAccessedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      enrolledAt: (map['enrolledAt'] as Timestamp).toDate(),
+      lastAccessedAt: (map['lastAccessedAt'] as Timestamp).toDate(),
       totalLessons: map['totalLessons'] ?? 0,
       completedLessons: map['completedLessons'] ?? 0,
-      lessonProgress: (map['lessonProgress'] as List<dynamic>?)
-          ?.map((l) => LessonProgress.fromJson(l))
-          .toList() ??
-          [],
-      quizAttempts: (map['quizAttempts'] as List<dynamic>?)
-          ?.map((q) => QuizAttempt.fromJson(q))
-          .toList() ??
-          [],
+      lessonProgress: _safeListOfMaps(map['lessonProgress'], 'lessonProgress'),
+      quizAttempts: _safeListOfMaps(map['quizAttempts'], 'quizAttempts'),
       overallGrade: (map['overallGrade'] ?? 0.0).toDouble(),
-      status: map['status'] ?? 'enrolled',
-      timeSpent: map['timeSpent'] ?? 0,
+      status: map['status'] ?? 'in_progress',
+      timeSpent: (map['timeSpent'] is int) ? map['timeSpent'] : 0,
     );
   }
 
+  factory StudentProgress.fromFirestoreData({
+    required Map<String, dynamic> enrolledUserData,
+    required Map<String, dynamic> courseData,
+    required List<Map<String, dynamic>> quizSubmissions,
+  }) {
+    final int completedLessons = (enrolledUserData['completedLessons'] ?? []).length;
+    final int totalLessons = courseData['lessonsCount'] ?? 0;
 
+    final double progress = totalLessons > 0
+        ? (completedLessons / totalLessons) * 100
+        : 0;
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'studentId': studentId,
-      'studentName': studentName,
-      'studentEmail': studentEmail,
-      'studentAvatar': studentAvatar,
-      'courseId': courseId,
-      'courseName': courseName,
-      'progressPercentage': progressPercentage,
-      'enrolledAt': enrolledAt.toIso8601String(),
-      'lastAccessedAt': lastAccessedAt.toIso8601String(),
-      'totalLessons': totalLessons,
-      'completedLessons': completedLessons,
-      'lessonProgress': lessonProgress.map((l) => l.toJson()).toList(),
-      'quizAttempts': quizAttempts.map((q) => q.toJson()).toList(),
-      'overallGrade': overallGrade,
-      'status': status,
-      'timeSpent': timeSpent,
-    };
-  }
-}
+    double totalScore = 0;
+    for (var quiz in quizSubmissions) {
+      totalScore += (quiz['score'] ?? 0).toDouble();
+    }
+    final double averageGrade = quizSubmissions.isNotEmpty
+        ? (totalScore / quizSubmissions.length)
+        : 0;
 
-class LessonProgress {
-  final String lessonId;
-  final String lessonTitle;
-  final bool isCompleted;
-  final DateTime? completedAt;
-  final int timeSpent; // in minutes
-  final double watchPercentage; // for video lessons
-
-  LessonProgress({
-    required this.lessonId,
-    required this.lessonTitle,
-    required this.isCompleted,
-    this.completedAt,
-    required this.timeSpent,
-    required this.watchPercentage,
-  });
-
-  factory LessonProgress.fromJson(Map<String, dynamic> json) {
-    return LessonProgress(
-      lessonId: json['lessonId'] ?? '',
-      lessonTitle: json['lessonTitle'] ?? '',
-      isCompleted: json['isCompleted'] ?? false,
-      completedAt: json['completedAt'] != null ? DateTime.tryParse(json['completedAt']) : null,
-      timeSpent: json['timeSpent'] ?? 0,
-      watchPercentage: (json['watchPercentage'] ?? 0.0).toDouble(),
+    return StudentProgress(
+      id: enrolledUserData['id'] ?? '',
+      studentId: enrolledUserData['studentId'] ?? '',
+      studentName: enrolledUserData['studentName'] ?? '',
+      studentEmail: enrolledUserData['studentEmail'] ?? '',
+      studentAvatar: enrolledUserData['studentAvatar'] ?? '',
+      courseId: courseData['id'] ?? '',
+      courseName: courseData['title'] ?? '',
+      progressPercentage: progress,
+      enrolledAt: (enrolledUserData['enrolledAt'] as Timestamp).toDate(),
+      lastAccessedAt: (enrolledUserData['lastAccessedAt'] as Timestamp).toDate(),
+      totalLessons: totalLessons,
+      completedLessons: completedLessons,
+      lessonProgress: _safeListOfMaps(enrolledUserData['lessonProgress'], 'lessonProgress'),
+      quizAttempts: quizSubmissions,
+      overallGrade: averageGrade,
+      status: enrolledUserData['status'] ?? 'in_progress',
+      timeSpent: (enrolledUserData['timeSpent'] is int)
+          ? enrolledUserData['timeSpent']
+          : 0,
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'lessonId': lessonId,
-      'lessonTitle': lessonTitle,
-      'isCompleted': isCompleted,
-      'completedAt': completedAt?.toIso8601String(),
-      'timeSpent': timeSpent,
-      'watchPercentage': watchPercentage,
-    };
-  }
-}
-
-class QuizAttempt {
-  final String quizId;
-  final String quizTitle;
-  final double score;
-  final double percentage;
-  final bool passed;
-  final DateTime attemptedAt;
-  final int timeSpent;
-  final int attemptNumber;
-
-  QuizAttempt({
-    required this.quizId,
-    required this.quizTitle,
-    required this.score,
-    required this.percentage,
-    required this.passed,
-    required this.attemptedAt,
-    required this.timeSpent,
-    required this.attemptNumber,
-  });
-
-  factory QuizAttempt.fromJson(Map<String, dynamic> json) {
-    return QuizAttempt(
-      quizId: json['quizId'] ?? '',
-      quizTitle: json['quizTitle'] ?? '',
-      score: (json['score'] ?? 0.0).toDouble(),
-      percentage: (json['percentage'] ?? 0.0).toDouble(),
-      passed: json['passed'] ?? false,
-      attemptedAt: json['attemptedAt'] != null ? DateTime.parse(json['attemptedAt']) : DateTime.now(),
-      timeSpent: json['timeSpent'] ?? 0,
-      attemptNumber: json['attemptNumber'] ?? 1,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'quizId': quizId,
-      'quizTitle': quizTitle,
-      'score': score,
-      'percentage': percentage,
-      'passed': passed,
-      'attemptedAt': attemptedAt.toIso8601String(),
-      'timeSpent': timeSpent,
-      'attemptNumber': attemptNumber,
-    };
   }
 }

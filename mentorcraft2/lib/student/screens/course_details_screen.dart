@@ -228,6 +228,17 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
     final totalLessons = modules.expand((m) => m['lessons'] as List).length;
     final progress = newCompleted.length / totalLessons;
 
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final userId = currentUser?.uid;
+    final studentName = currentUser?.displayName ?? 'Student';
+    final studentEmail = currentUser?.email ?? 'N/A';
+
+    String getSupabaseImageUrl(String uid) {
+      return 'https://tqzoozpckrmmprwnhweg.supabase.co/storage/v1/object/public/profile-images/public/$uid.jpg';
+    }
+
+    final profilePic = getSupabaseImageUrl(userId!);
+
     final docRef = FirebaseFirestore.instance
         .collection('courses')
         .doc(widget.course.id)
@@ -238,6 +249,11 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
       'completedLessons': newCompleted,
       'progress': progress,
       'lastAccessedDate': Timestamp.now(),
+      'studentName': studentName,
+      'studentEmail': studentEmail,
+      'studentAvatar': profilePic,
+      'completedCount': newCompleted.length,
+      'totalLessons': totalLessons,
       if (progress >= 1.0) 'isCertificateIssued': true,
     }, SetOptions(merge: true));
 
@@ -252,9 +268,6 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
     );
 
     if (progress >= 1.0) {
-      final currentUser = FirebaseAuth.instance.currentUser;
-      final studentName = currentUser?.displayName ?? 'Student';
-
       final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
       final shortId = 'CERT-${timestamp.substring(timestamp.length - 5)}';
 
@@ -274,7 +287,6 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
         skills: ['Skill A', 'Skill B'],
       );
 
-      // SAVE TO FIRESTORE
       await FirebaseFirestore.instance.collection('certificates').add({
         'userId': userId,
         'courseId': certificate.courseId,
@@ -291,12 +303,12 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
         'skills': certificate.skills,
       });
 
-      // SHOW SHEET AFTER FRAME
       WidgetsBinding.instance.addPostFrameCallback((_) {
         showCertificateDetailsSheet(context, certificate, studentName: studentName);
       });
     }
   }
+
 
   Future<String> fetchStudentName(String uid) async {
     final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();

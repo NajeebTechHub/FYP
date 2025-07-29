@@ -3,6 +3,7 @@ import 'package:mentorcraft2/student/student_main_app.dart';
 import 'package:mentorcraft2/teacher/screens/settings_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:mentorcraft2/teacher/provider/teacher_provider.dart';
+import '../../screens/settings_screen.dart';
 import '../../theme/color.dart';
 import 'teacher_dashboard.dart';
 import 'course_management_screen.dart';

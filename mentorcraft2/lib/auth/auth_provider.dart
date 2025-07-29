@@ -21,25 +21,6 @@ class AuthProvider extends ChangeNotifier {
   bool get isTeacher => _user?.role == UserRole.teacher;
   bool get isStudent => _user?.role == UserRole.student;
 
-  final List<AppUser> _demoUsers = [
-    AppUser(
-      id: 'teacher_001',
-      displayName: 'Dr. Sarah Johnson',
-      email: 'sarah.johnson@mentorcraft.com',
-      avatar: 'assets/teacher_avatar.png',
-      role: UserRole.teacher,
-      createdAt: DateTime.now().subtract(const Duration(days: 365)),
-    ),
-    AppUser(
-      id: 'student_001',
-      displayName: 'John Doe',
-      email: 'john.doe@email.com',
-      avatar: 'assets/student_avatar.png',
-      role: UserRole.student,
-      createdAt: DateTime.now().subtract(const Duration(days: 30)),
-    ),
-  ];
-
   AuthProvider() {
     _initializeAuth();
   }
@@ -54,7 +35,7 @@ class AuthProvider extends ChangeNotifier {
             _setUser(appUser);
           } else {
             debugPrint('❌ Failed to fetch user from Firestore');
-            _setUser(null); // fallback or navigate to error screen
+            _setUser(null);
           }
         } else {
           _setUser(null);
@@ -65,7 +46,6 @@ class AuthProvider extends ChangeNotifier {
           notifyListeners();
         }
       });
-
     } catch (e) {
       _setError('Failed to initialize auth: $e');
     } finally {
@@ -166,33 +146,6 @@ class AuthProvider extends ChangeNotifier {
     return await _authService.isOnboardingCompleted();
   }
 
-  Future<bool> demoLogin(String email, {UserRole? preferredRole}) async {
-    await Future.delayed(const Duration(seconds: 1));
-
-    AppUser? demo = _demoUsers.firstWhere(
-          (u) => u.email == email,
-      orElse: () => _demoUsers.first,
-    );
-
-    if (preferredRole != null) {
-      demo = _demoUsers.firstWhere((u) => u.role == preferredRole, orElse: () => demo!);
-    }
-
-    _user = demo;
-    notifyListeners();
-    return true;
-  }
-
-  void switchToTeacher() {
-    _user = _demoUsers.firstWhere((u) => u.role == UserRole.teacher);
-    notifyListeners();
-  }
-
-  void switchToStudent() {
-    _user = _demoUsers.firstWhere((u) => u.role == UserRole.student);
-    notifyListeners();
-  }
-
   void updateProfile(AppUser updatedUser) {
     _user = updatedUser;
     notifyListeners();
@@ -200,6 +153,11 @@ class AuthProvider extends ChangeNotifier {
 
   void _setUser(AppUser? user) {
     _user = user;
+    notifyListeners();
+  }
+
+  void setUser(AppUser newUser) {
+    _user = newUser;
     notifyListeners();
   }
 

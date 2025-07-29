@@ -1,5 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+class CourseModel {
+  final String id;
+  final String title;
+
+  CourseModel({
+    required this.id,
+    required this.title,
+  });
+}
+
 class TeacherCourse {
   final String id;
   final String title;
@@ -16,7 +26,7 @@ class TeacherCourse {
   final bool isPublished;
   final int enrolledStudents;
   final double rating;
-  final int totalRatings;
+  final int totalRating;
   List<CourseModule> modules;
 
   TeacherCourse({
@@ -35,7 +45,7 @@ class TeacherCourse {
     required this.isPublished,
     required this.enrolledStudents,
     required this.rating,
-    required this.totalRatings,
+    required this.totalRating,
     required this.modules,
   });
 
@@ -65,7 +75,7 @@ class TeacherCourse {
       isPublished: json['isPublished'] ?? false,
       enrolledStudents: json['enrolledStudents'] ?? 0,
       rating: (json['rating'] ?? 0.0).toDouble(),
-      totalRatings: json['totalRatings'] ?? 0,
+      totalRating: json['totalRating'] ?? 0,
       modules: (json['modules'] as List?)?.map((m) => CourseModule.fromJson(m)).toList() ?? [],
     );
   }
@@ -87,7 +97,7 @@ class TeacherCourse {
       'isPublished': isPublished,
       'enrolledStudents': enrolledStudents,
       'rating': rating,
-      'totalRatings': totalRatings,
+      'totalRating': totalRating,
       'modules': modules.map((m) => m.toJson()).toList(),
     };
   }
@@ -127,7 +137,7 @@ class TeacherCourse {
       isPublished: isPublished ?? this.isPublished,
       enrolledStudents: enrolledStudents ?? this.enrolledStudents,
       rating: rating ?? this.rating,
-      totalRatings: totalRatings ?? this.totalRatings,
+      totalRating: totalRatings ?? this.totalRating,
       modules: modules ?? this.modules,
     );
   }
@@ -248,3 +258,46 @@ class Lesson {
     );
   }
 }
+
+class LessonProgress {
+  final String lessonId;
+  final String lessonTitle;
+  final bool isCompleted;
+  final DateTime? completedAt;
+  final int timeSpent;
+  final double watchPercentage;
+
+  LessonProgress({
+    required this.lessonId,
+    required this.lessonTitle,
+    required this.isCompleted,
+    this.completedAt,
+    required this.timeSpent,
+    required this.watchPercentage,
+  });
+
+  factory LessonProgress.fromJson(Map<String, dynamic> json) {
+    return LessonProgress(
+      lessonId: json['lessonId'] ?? '',
+      lessonTitle: json['lessonTitle'] ?? '',
+      isCompleted: json['isCompleted'] ?? false,
+      completedAt: json['completedAt'] != null
+          ? DateTime.tryParse(json['completedAt'])
+          : null,
+      timeSpent: json['timeSpent'] ?? 0,
+      watchPercentage: (json['watchPercentage'] ?? 0.0).toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'lessonId': lessonId,
+      'lessonTitle': lessonTitle,
+      'isCompleted': isCompleted,
+      'completedAt': completedAt?.toIso8601String(),
+      'timeSpent': timeSpent,
+      'watchPercentage': watchPercentage,
+    };
+  }
+}
+

@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:mentorcraft2/teacher/provider/teacher_provider.dart';
+import 'package:mentorcraft2/teacher/provider/teacher_provider.dart' hide TeacherAnnouncement;
 import 'package:mentorcraft2/teacher/models/teacher_announcement.dart';
 import '../../../theme/color.dart';
 import 'package:mentorcraft2/teacher/widgets/announcement_card.dart';
@@ -22,16 +22,22 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
   @override
   void initState() {
     super.initState();
-    final TeacherProvider provider = Provider.of<TeacherProvider>(context, listen: false);
-    provider.fetchCourses();
-    provider.fetchAnnouncements();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = Provider.of<TeacherProvider>(context, listen: false);
+      provider.fetchCourses();
+      provider.fetchAnnouncements();
+    });
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Consumer<TeacherProvider>(
         builder: (context, teacherProvider, child) {
+          final isLoading = !teacherProvider.areAnnouncementsLoaded || !teacherProvider.areCoursesLoaded;
+
+          if (isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
           return Column(
             children: [
               Align(
@@ -72,6 +78,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
             ],
           );
         },
+
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
@@ -124,7 +131,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
           padding: const EdgeInsets.only(bottom: 16),
           child: AnnouncementCard(
             announcement: announcement,
-            onEdit: () => showEditAnnouncementDialog(context, announcement), // ✅ FIXED
+            onEdit: () => showEditAnnouncementDialog(context, announcement),
             onDelete: () => _showDeleteConfirmation(context, announcement, teacherProvider),
             onTogglePublish: () => teacherProvider.toggleAnnouncementPublish(announcement.id),
           ),
@@ -273,7 +280,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
         isPublished: false,
         enrolledStudents: 0,
         rating: 0.0,
-        totalRatings: 0,
+        totalRating: 0,
         modules: [],
         teacherName: '',
         createdAt: DateTime.now(),
