@@ -23,7 +23,7 @@ class CertificateTemplate extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: AppColors.darkBlue.withOpacity(0.5),
@@ -40,7 +40,6 @@ class CertificateTemplate extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Certificate border design
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -52,48 +51,34 @@ class CertificateTemplate extends StatelessWidget {
             ),
             child: Column(
               children: [
-                // Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
                   children: [
-                    Icon(
-                      Icons.workspace_premium,
-                      size: 32,
-                      color: AppColors.darkBlue,
-                    ),
-                    const SizedBox(width: 12),
+                    Icon(Icons.workspace_premium, size: 30, color: AppColors.darkBlue),
                     Text(
                       'MENTORCRAFT',
                       style: TextStyle(
-                        fontSize: 21,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        letterSpacing: 0,
                         color: AppColors.darkBlue,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Icon(
-                      Icons.workspace_premium,
-                      size: 32,
-                      color: AppColors.darkBlue,
-                    ),
+                    Icon(Icons.workspace_premium, size: 30, color: AppColors.darkBlue),
                   ],
                 ),
                 const SizedBox(height: 16),
-
-                // Certificate title
                 const Text(
                   'CERTIFICATE OF COMPLETION',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    letterSpacing: 0,
                     color: AppColors.primary,
                   ),
                 ),
                 const SizedBox(height: 16),
-
-                // Award text
                 RichText(
                   textAlign: TextAlign.center,
                   text: TextSpan(
@@ -103,25 +88,20 @@ class CertificateTemplate extends StatelessWidget {
                       height: 1.5,
                     ),
                     children: [
-                      const TextSpan(text: 'This certificate is presented to'),
-                      const TextSpan(text: '\n'),
+                      const TextSpan(text: 'This certificate is presented to\n'),
                       TextSpan(
                         text: studentName,
                         style: const TextStyle(
-                          fontSize: 24,
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
                           color: AppColors.darkBlue,
                           fontStyle: FontStyle.italic,
                         ),
                       ),
-                      const TextSpan(text: '\n'),
-                      const TextSpan(
-                        text: 'for successfully completing the course',
-                      ),
-                      const TextSpan(text: '\n'),
+                      const TextSpan(text: '\nfor successfully completing the course\n'),
                       TextSpan(
                         text: courseName,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: AppColors.primary,
@@ -131,60 +111,67 @@ class CertificateTemplate extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-
-                // Date and signatures
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Issue Date:',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textSecondary,
+                        Flexible(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Issue Date:',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                issueDate,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade800,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          issueDate,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade800,
-                            fontWeight: FontWeight.w500,
+                        const SizedBox(width: 16),
+                        Flexible(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              const Text(
+                                'Certificate ID:',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                certificateId,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade800,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
                         ),
                       ],
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        const Text(
-                          'Certificate ID:',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          certificateId,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade800,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 24),
-
-                // Signature
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -202,11 +189,7 @@ class CertificateTemplate extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Container(
-                            width: 100,
-                            height: 1,
-                            color: Colors.black45,
-                          ),
+                          Container(width: 100, height: 1, color: Colors.black45),
                           const SizedBox(height: 8),
                           Text(
                             'Course Instructor',
@@ -234,11 +217,7 @@ class CertificateTemplate extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Container(
-                            width: 100,
-                            height: 1,
-                            color: Colors.black45,
-                          ),
+                          Container(width: 100, height: 1, color: Colors.black45),
                           const SizedBox(height: 8),
                           Text(
                             'MentorCraft Director',
@@ -253,38 +232,28 @@ class CertificateTemplate extends StatelessWidget {
                     ),
                   ],
                 ),
-
               ],
             ),
           ),
-
-          // Footer
-          Padding(
-            padding: const EdgeInsets.only(top: 16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(
-                  Icons.verified,
-                  size: 15,
-                  color: AppColors.primary,
-                ),
-                const SizedBox(width: 5),
-                Expanded(
-                  child: Text(
-                    'Verify this certificate at mentorcraft.com/verify',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey.shade600,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.verified, size: 15, color: AppColors.primary),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text(
+                  'Verify this certificate at mentorcraft.com/verify',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey.shade600,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-
         ],
       ),
     );

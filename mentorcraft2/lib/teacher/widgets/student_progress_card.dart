@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../theme/color.dart';
 import '../models/student_progress.dart';
 
 class StudentProgressCard extends StatelessWidget {
@@ -13,23 +14,21 @@ class StudentProgressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? AppColors.cardDark : AppColors.white;
+    final primaryText = isDark ? AppColors.textLight : Colors.black87;
+    final secondaryText = isDark ? AppColors.textFaded : Colors.grey[600];
+    final fadedText = isDark ? AppColors.textFaded : Colors.grey[500];
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 4),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.08),
-              spreadRadius: 1,
-              blurRadius: 6,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
         padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(16),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -47,17 +46,17 @@ class StudentProgressCard extends StatelessWidget {
                     children: [
                       Text(
                         student.studentName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15.5,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          color: primaryText,
                         ),
                       ),
                       Text(
                         student.studentEmail,
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.grey[600],
+                          color: secondaryText,
                         ),
                       ),
                     ],
@@ -80,38 +79,35 @@ class StudentProgressCard extends StatelessWidget {
                 ),
               ],
             ),
-
             const SizedBox(height: 12),
             Text(
               student.courseName,
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey[700],
+                color: secondaryText,
                 fontWeight: FontWeight.w500,
               ),
             ),
-
             const SizedBox(height: 8),
-
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Progress',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey,
+                        color: fadedText,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     Text(
                       '${student.progressPercentage.toStringAsFixed(1)}%',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Colors.black54,
+                        color: secondaryText,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -128,34 +124,24 @@ class StudentProgressCard extends StatelessWidget {
                 ),
               ],
             ),
-
             const SizedBox(height: 12),
-
             Row(
               children: [
                 _buildStatItem(Icons.play_lesson,
-                    '${student.completedLessons}/${student.totalLessons}', 'Lessons'),
-                // const SizedBox(width: 16),
-                // _buildStatItem(Icons.grade,
-                //     '${student.overallGrade.toStringAsFixed(1)}%', 'Grade'),
+                    '${student.completedLessons}/${student.totalLessons}', 'Lessons', secondaryText!, primaryText),
                 const SizedBox(width: 50),
-                _buildStatItem(Icons.access_time, _formatElapsedTime(student.enrolledAt), 'Since'),
+                _buildStatItem(Icons.access_time, _formatElapsedTime(student.enrolledAt), 'Since', secondaryText, primaryText),
                 const Spacer(),
                 Tooltip(
                   message: student.lastAccessedAt.toString(),
                   child: Text(
                     'Last: ${_formatTimeAgo(student.lastAccessedAt)}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[500],
-                    ),
+                    style: TextStyle(fontSize: 11, color: fadedText),
                   ),
                 ),
               ],
             ),
-
             const SizedBox(height: 12),
-
             Row(
               children: [
                 Expanded(
@@ -163,18 +149,11 @@ class StudentProgressCard extends StatelessWidget {
                     message: student.enrolledAt.toString(),
                     child: Text(
                       'Enrolled: ${_formatDate(student.enrolledAt)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[500],
-                      ),
+                      style: TextStyle(fontSize: 12, color: fadedText),
                     ),
                   ),
                 ),
-                const Icon(
-                  Icons.arrow_forward_ios,
-                  size: 14,
-                  color: Colors.grey,
-                ),
+                Icon(Icons.arrow_forward_ios, size: 14, color: fadedText),
               ],
             ),
           ],
@@ -183,27 +162,16 @@ class StudentProgressCard extends StatelessWidget {
     );
   }
 
-
-  Widget _buildStatItem(IconData icon, String value, String label) {
+  Widget _buildStatItem(IconData icon, String value, String label, Color iconColor, Color valueColor) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: Colors.grey[600]),
+        Icon(icon, size: 14, color: iconColor),
         const SizedBox(width: 4),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-            Text(
-              label,
-              style: TextStyle(fontSize: 10, color: Colors.grey[500]),
-            ),
+            Text(value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: valueColor)),
+            Text(label, style: TextStyle(fontSize: 10, color: iconColor)),
           ],
         ),
       ],
@@ -219,54 +187,32 @@ class StudentProgressCard extends StatelessWidget {
   }
 
   Color _getStatusColor(String status) {
-    if (student.progressPercentage >= 100.0) {
-      return Colors.green;
-    }
-    if (student.progressPercentage == 0.0) {
-      return Colors.orange;}
-    if (student.progressPercentage >= 0.0) {
-      return Colors.blue;
-    }
+    if (student.progressPercentage >= 100.0) return Colors.green;
+    if (student.progressPercentage == 0.0) return Colors.orange;
+    if (student.progressPercentage >= 0.0) return Colors.blue;
 
     switch (status) {
-      case 'completed':
-        return Colors.green;
-      case 'in_progress':
-        return Colors.blue;
-      case 'enrolled':
-        return Colors.orange;
-      case 'dropped':
-        return Colors.red;
-      default:
-        return Colors.grey;
+      case 'completed': return Colors.green;
+      case 'in_progress': return Colors.blue;
+      case 'enrolled': return Colors.orange;
+      case 'dropped': return Colors.red;
+      default: return Colors.grey;
     }
   }
 
   String _getStatusText(String status) {
-    if (student.progressPercentage >= 100.0) {
-      return 'Completed';
-    }
-    if (student.progressPercentage == 0.0) {
-      return 'enrolled';
-    }
-    if (student.progressPercentage >= 0.0) {
-      return 'in_progress';
-    }
+    if (student.progressPercentage >= 100.0) return 'Completed';
+    if (student.progressPercentage == 0.0) return 'Enrolled';
+    if (student.progressPercentage >= 0.0) return 'In Progress';
 
     switch (status) {
-      case 'in_progress':
-        return 'In Progress';
-      case 'enrolled':
-        return 'Enrolled';
-      case 'completed':
-        return 'Completed';
-      case 'dropped':
-        return 'Dropped';
-      default:
-        return status;
+      case 'in_progress': return 'In Progress';
+      case 'enrolled': return 'Enrolled';
+      case 'completed': return 'Completed';
+      case 'dropped': return 'Dropped';
+      default: return status;
     }
   }
-
 
   Color _getProgressColor(double progress) {
     if (progress >= 80) return Colors.green;
@@ -284,27 +230,13 @@ class StudentProgressCard extends StatelessWidget {
     return 'Just now';
   }
 
-  // String _formatTimeSpent(int minutes) {
-  //   final hours = minutes ~/ 60;
-  //   final mins = minutes % 60;
-  //   if (hours > 0 && mins > 0) return '${hours}h ${mins}m';
-  //   if (hours > 0) return '${hours}h';
-  //   return '${mins}m';
-  // }
-
   String _formatElapsedTime(DateTime start) {
     final now = DateTime.now();
     final diff = now.difference(start);
-
-    if (diff.inDays >= 1) {
-      return '${diff.inDays} days';
-    } else if (diff.inHours >= 1) {
-      return '${diff.inHours} hours';
-    } else {
-      return '${diff.inMinutes} minutes';
-    }
+    if (diff.inDays >= 1) return '${diff.inDays} days';
+    if (diff.inHours >= 1) return '${diff.inHours} hours';
+    return '${diff.inMinutes} minutes';
   }
-
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';

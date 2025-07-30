@@ -27,8 +27,11 @@ class _QuizManagementScreenState extends State<QuizManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Consumer<TeacherProvider>(
         builder: (context, teacherProvider, child) {
           final isLoading = teacherProvider.isQuizLoading;
@@ -43,13 +46,13 @@ class _QuizManagementScreenState extends State<QuizManagementScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.quiz_outlined, size: 64, color: Colors.grey[400]),
-                  SizedBox(height: 16),
+                  Icon(Icons.quiz_outlined, size: 64, color: theme.hintColor),
+                  const SizedBox(height: 16),
                   Text('No quizzes found',
-                      style: TextStyle(fontSize: 18, color: Colors.grey[600], fontWeight: FontWeight.w500)),
-                  SizedBox(height: 8),
+                      style: textTheme.headlineMedium?.copyWith(color: theme.hintColor)),
+                  const SizedBox(height: 8),
                   Text('Create your first quiz to get started',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[500])),
+                      style: textTheme.bodyLarge?.copyWith(color: theme.hintColor)),
                 ],
               ),
             );

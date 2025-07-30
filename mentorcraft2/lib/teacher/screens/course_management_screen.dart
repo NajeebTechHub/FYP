@@ -29,13 +29,11 @@ class _CourseManagementScreenState extends State<CourseManagementScreen>
       if (provider.teacherId.isEmpty || provider.teacherName.isEmpty) {
         await provider.initializeData();
       }
-
       if (provider.teacherId.isNotEmpty) {
         provider.subscribeToCourses(provider.teacherId);
       }
     });
   }
-
 
   @override
   void dispose() {
@@ -45,11 +43,17 @@ class _CourseManagementScreenState extends State<CourseManagementScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDark ? AppColors.darkBackground : Colors.grey[50];
+    final cardColor = isDark ? AppColors.cardDark : Colors.white;
+    final textColor = isDark ? AppColors.textLight : Colors.black87;
+    final inputFillColor = isDark ? AppColors.cardDark : Colors.grey[100];
+
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        backgroundColor: cardColor,
+        foregroundColor: textColor,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Column(
@@ -59,25 +63,23 @@ class _CourseManagementScreenState extends State<CourseManagementScreen>
                 child: TextField(
                   decoration: InputDecoration(
                     hintText: 'Search courses...',
-                    prefixIcon: const Icon(Icons.search),
+                    hintStyle: TextStyle(color: isDark ? AppColors.textFaded : Colors.grey),
+                    prefixIcon: Icon(Icons.search, color: isDark ? AppColors.textFaded : Colors.grey),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
-                    fillColor: Colors.grey[100],
+                    fillColor: inputFillColor,
                   ),
-                  onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                    });
-                  },
+                  style: TextStyle(color: textColor),
+                  onChanged: (value) => setState(() => _searchQuery = value),
                 ),
               ),
               TabBar(
                 controller: _tabController,
                 labelColor: AppColors.primary,
-                unselectedLabelColor: Colors.grey,
+                unselectedLabelColor: isDark ? AppColors.textFaded : Colors.grey,
                 indicatorColor: AppColors.primary,
                 tabs: const [
                   Tab(text: 'All Courses'),
@@ -90,13 +92,13 @@ class _CourseManagementScreenState extends State<CourseManagementScreen>
         ),
       ),
       body: Consumer<TeacherProvider>(
-        builder: (context, teacherProvider, child) {
+        builder: (context, provider, _) {
           return TabBarView(
             controller: _tabController,
             children: [
-              _buildCourseList(teacherProvider.courses),
-              _buildCourseList(teacherProvider.getCoursesByStatus('published')),
-              _buildCourseList(teacherProvider.getCoursesByStatus('draft')),
+              _buildCourseList(provider.courses),
+              _buildCourseList(provider.getCoursesByStatus('published')),
+              _buildCourseList(provider.getCoursesByStatus('draft')),
             ],
           );
         },
@@ -105,14 +107,12 @@ class _CourseManagementScreenState extends State<CourseManagementScreen>
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => const CreateCourseScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const CreateCourseScreen()),
           );
         },
         backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.add,color: Colors.white,),
-        label: const Text('Create Course',style: TextStyle(color: Colors.white),),
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text('Create Course', style: TextStyle(color: Colors.white)),
       ),
     );
   }
@@ -120,7 +120,6 @@ class _CourseManagementScreenState extends State<CourseManagementScreen>
   Widget _buildCourseList(List<TeacherCourse> courses) {
     final provider = Provider.of<TeacherProvider>(context, listen: false);
 
-    // Show loading indicator if not loaded yet
     if (!provider.areCoursesLoaded) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -135,31 +134,16 @@ class _CourseManagementScreenState extends State<CourseManagementScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.book_outlined,
-              size: 64,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.book_outlined, size: 64, color: Colors.grey[500]),
             const SizedBox(height: 16),
             Text(
-              _searchQuery.isEmpty
-                  ? 'No courses found'
-                  : 'No courses match your search',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
+              _searchQuery.isEmpty ? 'No courses found' : 'No courses match your search',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.grey[600]),
             ),
             const SizedBox(height: 8),
             Text(
-              _searchQuery.isEmpty
-                  ? 'Create your first course to get started'
-                  : 'Try adjusting your search terms',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[500],
-              ),
+              _searchQuery.isEmpty ? 'Create your first course to get started' : 'Try adjusting your search terms',
+              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
             ),
           ],
         ),
@@ -169,7 +153,7 @@ class _CourseManagementScreenState extends State<CourseManagementScreen>
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: filteredCourses.length,
-      itemBuilder: (context, index) {
+      itemBuilder: (_, index) {
         final course = filteredCourses[index];
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
@@ -178,14 +162,10 @@ class _CourseManagementScreenState extends State<CourseManagementScreen>
             onEdit: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => EditCourseScreen(course: course),
-                ),
+                MaterialPageRoute(builder: (_) => EditCourseScreen(course: course)),
               );
             },
-            onDelete: () {
-              _showDeleteConfirmation(context, course);
-            },
+            onDelete: () => _showDeleteConfirmation(context, course),
             onTogglePublish: () {
               Provider.of<TeacherProvider>(context, listen: false)
                   .toggleCoursePublished(course.id, !course.isPublished);
@@ -196,16 +176,13 @@ class _CourseManagementScreenState extends State<CourseManagementScreen>
     );
   }
 
-
   void _showDeleteConfirmation(BuildContext context, TeacherCourse course) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (_) {
         return AlertDialog(
           title: const Text('Delete Course'),
-          content: Text(
-            'Are you sure you want to delete "${course.title}"? This action cannot be undone.',
-          ),
+          content: Text('Are you sure you want to delete "${course.title}"? This action cannot be undone.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -213,8 +190,7 @@ class _CourseManagementScreenState extends State<CourseManagementScreen>
             ),
             ElevatedButton(
               onPressed: () {
-                Provider.of<TeacherProvider>(context, listen: false)
-                    .deleteCourse(course.id);
+                Provider.of<TeacherProvider>(context, listen: false).deleteCourse(course.id);
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(

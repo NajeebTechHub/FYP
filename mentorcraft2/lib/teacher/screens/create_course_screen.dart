@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:mentorcraft2/teacher/provider/teacher_provider.dart';
 import '../../services/course_service.dart';
 import '../models/teacher_course.dart';
+import '../../theme/color.dart';
 
 class CreateCourseScreen extends StatefulWidget {
   const CreateCourseScreen({Key? key}) : super(key: key);
@@ -131,8 +132,6 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
 
       try {
         await CourseService().addCourse(course);
-
-        /// Ensure real-time update kicks in immediately
         await teacherProvider.fetchCourses();
         teacherProvider.reSubscribeCourses();
 
@@ -157,6 +156,10 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDark ? AppColors.darkBackground : AppColors.white;
+    final labelColor = isDark ? AppColors.textLight : AppColors.textPrimary;
+
     if (_isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -164,9 +167,11 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
     }
 
     return Scaffold(
+      backgroundColor: backgroundColor,
       appBar: AppBar(
         title: const Text('Create New Course'),
-        foregroundColor: Colors.black87,
+        foregroundColor: labelColor,
+        backgroundColor: backgroundColor,
         elevation: 0,
       ),
       body: Form(
@@ -189,11 +194,45 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
               const SizedBox(height: 24),
               Row(
                 children: [
-                  Expanded(child: OutlinedButton(onPressed: _saveDraft, child: const Text('Save as Draft'))),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _saveDraft,
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: AppColors.secondary),
+                        foregroundColor: AppColors.secondary,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: const Text(
+                        'Save as Draft',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
                   const SizedBox(width: 16),
-                  Expanded(child: ElevatedButton(onPressed: _publishCourse, child: const Text('Publish Course'))),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _publishCourse,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.secondary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        elevation: 3,
+                      ),
+                      child: const Text(
+                        'Publish Course',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
                 ],
               ),
+
             ],
           ),
         ),
@@ -233,13 +272,36 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
     return GestureDetector(
       onTap: _pickImage,
       child: Container(
-        height: 150,
+        height: 180,
         width: double.infinity,
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), color: Colors.grey[200]),
+        decoration: BoxDecoration(
+          color: AppColors.cardDark,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppColors.darkBlue.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
         child: _selectedImage != null
-            ? Image.file(_selectedImage!, fit: BoxFit.cover)
-            : const Center(child: Text('Tap to pick course image')),
-      ),
+            ? ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.file(
+            _selectedImage!,
+            fit: BoxFit.cover,
+            width: double.infinity,
+          ),
+        )
+            : Center(
+          child: Icon(
+            Icons.image,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white38
+                : Colors.black38,
+            size: 40,
+          ),
+        ),
+      )
+
     );
   }
 }

@@ -3,15 +3,27 @@ import 'package:intl/intl.dart';
 import 'package:mentorcraft2/student/models/certificate.dart';
 import '../../../theme/color.dart';
 import '../../widgets/certificate_widgets/certificate_template.dart';
-import '../certificate_preview_screen.dart';
+import 'certificate_preview_screen.dart';
 
-void showCertificateDetailsSheet(BuildContext context, Certificate certificate, {required String studentName}) {
+void showCertificateDetailsSheet(
+    BuildContext context,
+    Certificate certificate, {
+      required String studentName,
+    }) {
   final dateFormat = DateFormat('MMMM d, yyyy');
+  final theme = Theme.of(context);
+  final isDark = theme.brightness == Brightness.dark;
+
+  final backgroundColor = isDark ? AppColors.darkBackground : Colors.white;
+  final primaryText = isDark ? AppColors.textLight : AppColors.textPrimary;
+  final secondaryText = isDark ? AppColors.textFaded : AppColors.textSecondary;
+  final descriptionText =
+  isDark ? AppColors.textLight.withOpacity(0.9) : Colors.grey.shade800;
 
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.white,
+    backgroundColor: backgroundColor,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
@@ -28,119 +40,113 @@ void showCertificateDetailsSheet(BuildContext context, Certificate certificate, 
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // --- Half certificate template with preview button ---
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 0),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Stack(
-                      children: [
-                        ClipRect(
-                          child: Align(
-                            alignment: Alignment.topCenter,
-                            heightFactor: 0.45,
-                            child: CertificateTemplate(
-                              courseName: certificate.courseName,
-                              studentName: studentName,
-                              issueDate: dateFormat.format(certificate.issueDate),
-                              certificateId: certificate.id,
-                              instructor: certificate.instructor,
-                            ),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Stack(
+                    children: [
+                      ClipRect(
+                        child: Align(
+                          alignment: Alignment.topCenter,
+                          heightFactor: 0.45,
+                          child: CertificateTemplate(
+                            courseName: certificate.courseName,
+                            studentName: studentName,
+                            issueDate:
+                            dateFormat.format(certificate.issueDate),
+                            certificateId: certificate.id,
+                            instructor: certificate.instructor,
                           ),
                         ),
-                        Positioned(
-                          top: 12,
-                          right: 12,
-                          child: Material(
-                            color: Colors.black38,
-                            shape: const CircleBorder(),
-                            child: IconButton(
-                              icon: const Icon(Icons.visibility, color: Colors.white),
-                              onPressed: () {
-                                Navigator.pop(context);
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        CertificatePreviewScreen(certificate: certificate, studentName: studentName,),
+                      ),
+                      Positioned(
+                        top: 12,
+                        right: 12,
+                        child: Material(
+                          color: Colors.black38,
+                          shape: const CircleBorder(),
+                          child: IconButton(
+                            icon: const Icon(Icons.visibility,
+                                color: Colors.white),
+                            onPressed: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => CertificatePreviewScreen(
+                                    certificate: certificate,
+                                    studentName: studentName,
                                   ),
-                                );
-                              },
-                            ),
+                                ),
+                              );
+                            },
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-
-
                 const SizedBox(height: 24),
-
-                // --- Course Name ---
                 Text(
                   certificate.courseName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: primaryText,
                   ),
                 ),
                 const SizedBox(height: 8),
-
-                // --- Instructor & Rating ---
                 Row(
                   children: [
-                    Text(
-                      'Instructor: ${certificate.instructor}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
+                    Expanded(
+                      child: Text(
+                        'Instructor: ${certificate.instructor}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: secondaryText,
+                        ),
                       ),
                     ),
-                    const Spacer(),
                     Icon(Icons.star, size: 16, color: Colors.amber.shade700),
                     const SizedBox(width: 4),
                     Text(
                       certificate.courseRating.toStringAsFixed(1),
-                      style: const TextStyle(fontSize: 14),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: primaryText,
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-
-                // --- Description ---
                 Text(
                   certificate.description,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey.shade800,
+                    color: descriptionText,
                     height: 1.4,
                   ),
                 ),
                 const SizedBox(height: 16),
-
-                // --- Dates ---
                 Row(
                   children: [
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Completion Date',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textSecondary,
+                              color: secondaryText,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             dateFormat.format(certificate.completionDate),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
-                              color: AppColors.textPrimary,
+                              color: primaryText,
                             ),
                           ),
                         ],
@@ -150,20 +156,20 @@ void showCertificateDetailsSheet(BuildContext context, Certificate certificate, 
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Issue Date',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textSecondary,
+                              color: secondaryText,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             dateFormat.format(certificate.issueDate),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
-                              color: AppColors.textPrimary,
+                              color: primaryText,
                             ),
                           ),
                         ],
@@ -172,44 +178,16 @@ void showCertificateDetailsSheet(BuildContext context, Certificate certificate, 
                   ],
                 ),
                 const SizedBox(height: 24),
-
-                // --- Skills ---
-                const Text(
-                  'Skills Acquired',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
                 const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: certificate.skills.map((skill) {
-                    return Chip(
-                      label: Text(skill),
-                      backgroundColor: AppColors.primary.withOpacity(0.1),
-                      labelStyle: const TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    );
-                  }).toList(),
-                ),
                 const SizedBox(height: 24),
-
-                // --- Buttons ---
                 Row(
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Certificate verified!')),
+                            const SnackBar(
+                                content: Text('Certificate verified!')),
                           );
                         },
                         icon: const Icon(Icons.qr_code),
@@ -229,7 +207,8 @@ void showCertificateDetailsSheet(BuildContext context, Certificate certificate, 
                       child: ElevatedButton.icon(
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Sharing certificate...')),
+                            const SnackBar(
+                                content: Text('Sharing certificate...')),
                           );
                         },
                         icon: const Icon(Icons.share),
@@ -252,7 +231,9 @@ void showCertificateDetailsSheet(BuildContext context, Certificate certificate, 
                   child: ElevatedButton.icon(
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Downloading certificate as PDF...')),
+                        const SnackBar(
+                            content:
+                            Text('Downloading certificate as PDF...')),
                       );
                     },
                     icon: const Icon(Icons.download),

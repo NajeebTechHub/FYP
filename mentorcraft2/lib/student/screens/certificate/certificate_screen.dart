@@ -2,28 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mentorcraft2/student/models/certificate.dart';
-import 'certificate/certificate_grid_card.dart';
-import 'certificate/certificate_list_card.dart';
-import 'certificate/certificate_filter_section.dart';
-import 'certificate/certificate_detail_bottom_sheet.dart';
-import 'certificate/empty_state.dart';
+import '../../../theme/color.dart';
+import 'certificate_grid_card.dart';
+import 'certificate_list_card.dart';
+import 'certificate_filter_section.dart';
+import 'certificate_detail_bottom_sheet.dart';
+import 'empty_state.dart';
 
 class CertificatesScreen extends StatefulWidget {
   const CertificatesScreen({Key? key}) : super(key: key);
 
   @override
-  _CertificatesScreenState createState() => _CertificatesScreenState();
+  State<CertificatesScreen> createState() => _CertificatesScreenState();
 }
 
 class _CertificatesScreenState extends State<CertificatesScreen>
     with SingleTickerProviderStateMixin {
   final _firestore = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
+
   List<Certificate> _allCerts = [];
   List<Certificate> _filteredCerts = [];
   bool _isGridView = false;
   String _searchQuery = '';
   String? _selectedCategory;
+
   late AnimationController _animController;
   bool _isLoading = true;
 
@@ -77,9 +80,14 @@ class _CertificatesScreenState extends State<CertificatesScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: isDark ? AppColors.darkBackground : Colors.white,
       appBar: AppBar(
         title: const Text('My Certificates'),
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        elevation: 0,
         actions: [
           IconButton(
             icon: Icon(_isGridView ? Icons.view_list : Icons.grid_view),
@@ -88,7 +96,9 @@ class _CertificatesScreenState extends State<CertificatesScreen>
         ],
       ),
       body: SafeArea(
-        child: _isLoading ? const Center(child: CircularProgressIndicator()) : Column(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
           children: [
             CertificateFilterSection(
               searchQuery: _searchQuery,
@@ -126,7 +136,10 @@ class _CertificatesScreenState extends State<CertificatesScreen>
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2, childAspectRatio: 0.72, mainAxisSpacing: 16, crossAxisSpacing: 16
+        crossAxisCount: 2,
+        childAspectRatio: 0.72,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
       ),
       itemCount: _filteredCerts.length,
       itemBuilder: (context, i) {

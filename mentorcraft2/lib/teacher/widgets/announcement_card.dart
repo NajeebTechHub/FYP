@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../theme/color.dart';
 import '../models/teacher_announcement.dart';
 
 class AnnouncementCard extends StatelessWidget {
@@ -17,13 +18,21 @@ class AnnouncementCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final background = isDark ? AppColors.cardDark : AppColors.white;
+    final textPrimary = isDark ? AppColors.textLight : Colors.black87;
+    final textSecondary = isDark ? AppColors.textFaded : Colors.grey[700];
+    final borderColor = isDark ? Colors.grey[800] : Colors.grey[200];
+    final shadowColor = isDark ? Colors.transparent : Colors.grey.withOpacity(0.2);
+    final metaBackground = isDark ? AppColors.darkBackground : Colors.grey[50];
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: background,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
+            color: shadowColor,
             spreadRadius: 3,
             blurRadius: 6,
             offset: const Offset(0, 3),
@@ -35,7 +44,6 @@ class AnnouncementCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Row(
               children: [
                 Container(
@@ -57,10 +65,10 @@ class AnnouncementCard extends StatelessWidget {
                     children: [
                       Text(
                         announcement.title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                          color: textPrimary,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -83,10 +91,7 @@ class AnnouncementCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         announcement.courseName,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 14, color: textSecondary),
                       ),
                     ],
                   ),
@@ -108,44 +113,39 @@ class AnnouncementCard extends StatelessWidget {
                 ),
               ],
             ),
-
             const SizedBox(height: 12),
-
-            // Content
             Text(
               announcement.content,
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey[700],
+                color: textSecondary,
                 height: 1.4,
               ),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
-
             const SizedBox(height: 12),
-
-            // Meta Information
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.grey[50],
+                color: metaBackground,
                 borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: borderColor!),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.visibility, size: 16, color: Colors.grey[600]),
+                  Icon(Icons.visibility, size: 16, color: textSecondary),
                   const SizedBox(width: 4),
                   Text(
                     '${announcement.readCount} reads',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    style: TextStyle(fontSize: 12, color: textSecondary),
                   ),
                   const SizedBox(width: 16),
-                  Icon(Icons.schedule, size: 16, color: Colors.grey[600]),
+                  Icon(Icons.schedule, size: 16, color: textSecondary),
                   const SizedBox(width: 4),
                   Text(
                     _formatDate(announcement.createdAt),
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    style: TextStyle(fontSize: 12, color: textSecondary),
                   ),
                   const Spacer(),
                   Container(
@@ -166,10 +166,7 @@ class AnnouncementCard extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(height: 16),
-
-            // Action Buttons
             Row(
               children: [
                 Expanded(
@@ -185,30 +182,38 @@ class AnnouncementCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: onTogglePublish,
-                    icon: Icon(
-                      announcement.isPublished ? Icons.unpublished : Icons.publish,
-                      size: 16,
-                    ),
-                    label: Text(
-                      announcement.isPublished ? 'Unpublish' : 'Publish',
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                      announcement.isPublished ? Colors.orange : Colors.green,
-                      foregroundColor: Colors.white,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: ElevatedButton.icon(
+                      onPressed: onTogglePublish,
+                      icon: Icon(
+                        announcement.isPublished ? Icons.unpublished : Icons.publish,
+                        size: 18,
+                      ),
+                      label: Text(
+                        announcement.isPublished ? 'Unpublish' : 'Publish',
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: announcement.isPublished ? Colors.orange : Colors.green,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30), // More circular look
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        elevation: 1,
+                      ),
                     ),
                   ),
                 ),
+
                 const SizedBox(width: 5),
-                Container(
+                SizedBox(
                   width: 25,
                   child: IconButton(
                     onPressed: onDelete,
                     icon: const Icon(Icons.delete),
                     color: Colors.red,
-                    tooltip: 'Delete Announcement',
                   ),
                 ),
               ],
@@ -247,14 +252,11 @@ class AnnouncementCard extends StatelessWidget {
 
   String _formatDate(DateTime date) {
     final now = DateTime.now();
-    final difference = now.difference(date);
+    final diff = now.difference(date);
 
-    if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else {
-      return 'Just now';
-    }
+    if (diff.inDays > 0) return '${diff.inDays}d ago';
+    if (diff.inHours > 0) return '${diff.inHours}h ago';
+    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
+    return 'Just now';
   }
 }

@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mentorcraft2/student/screens/forum_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import 'package:mentorcraft2/teacher/provider/teacher_provider.dart';
-import '../../student/screens/discussion_details_screen.dart';
 import '../../theme/color.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/earnings_chart.dart';
@@ -27,18 +25,10 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final provider = Provider.of<TeacherProvider>(context, listen: false);
-
-      if (!provider.isInitialized) {
-        await provider.initializeData();
-      }
-
-      if (!provider.isStatsLoaded) {
-        await provider.fetchCourseStats();
-      }
-
+      if (!provider.isInitialized) await provider.initializeData();
+      if (!provider.isStatsLoaded) await provider.fetchCourseStats();
       await _fetchQuizStats(provider.teacherId);
-
-      Provider.of<TeacherProvider>(context, listen: false).fetchRealEarningsForChart();
+      provider.fetchRealEarningsForChart();
     });
   }
 
@@ -50,8 +40,8 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
           .get();
 
       final quizzes = quizSnapshot.docs;
-
       int submissionCount = 0;
+
       for (var quiz in quizzes) {
         final submissions = await FirebaseFirestore.instance
             .collection('quizzes')
@@ -68,9 +58,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
           isQuizStatsLoaded = true;
         });
       }
-    } catch (e) {
-      print('Error fetching quiz stats: $e');
-    }
+    } catch (_) {}
   }
 
   String getSupabaseImageUrl(String uid) {
@@ -79,11 +67,11 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    final teacherProvider = Provider.of<TeacherProvider>(context);
-    final earningsList = teacherProvider.monthlyEarningsList;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? AppColors.darkBackground : Colors.grey[50];
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: bgColor,
       body: Consumer<TeacherProvider>(
         builder: (context, provider, child) {
           if (!provider.isStatsLoaded || !isQuizStatsLoaded) {
@@ -91,18 +79,13 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
           }
 
           final stats = provider.dashboardStats;
-          final teacherName = provider.teacherName.isNotEmpty
-              ? provider.teacherName
-              : 'Instructor';
+          final teacherName = provider.teacherName.isNotEmpty ? provider.teacherName : 'Instructor';
           final uid = provider.teacherId;
-          final avatarUrl = uid.isNotEmpty
-              ? getSupabaseImageUrl(uid)
-              : 'https://via.placeholder.com/150';
+          final avatarUrl = uid.isNotEmpty ? getSupabaseImageUrl(uid) : 'https://via.placeholder.com/150';
 
           return ListView(
             padding: const EdgeInsets.all(16.0),
             children: [
-              // Welcome Box
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -141,10 +124,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 24),
-
-              // Dashboard Stats Cards
               GridView.count(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -153,87 +133,35 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                 crossAxisSpacing: 16,
                 childAspectRatio: 1,
                 children: [
-                  StatCard(
-                    title: 'Total Quizzes',
-                    value: totalQuizzes.toString(),
-                    subtitle: '$totalSubmissions Submissions',
-                    icon: Icons.quiz,
-                    color: Colors.indigo,
-                  ),
-                  StatCard(
-                    title: 'Total Courses',
-                    value: stats.totalCourses.toString(),
-                    subtitle: '${stats.publishedCourses} Published',
-                    icon: Icons.book,
-                    color: Colors.blue,
-                  ),
-                  StatCard(
-                    title: 'Total Students',
-                    value: stats.totalStudents.toString(),
-                    subtitle: '${stats.activeStudents} Active',
-                    icon: Icons.people,
-                    color: Colors.green,
-                  ),
-                  StatCard(
-                    title: 'Avg Rating',
-                    value: stats.averageRating.toStringAsFixed(1),
-                    subtitle: '${stats.totalReviews} Reviews',
-                    icon: Icons.star,
-                    color: Colors.purple,
-                  ),
+                  StatCard(title: 'Total Quizzes', value: totalQuizzes.toString(), subtitle: '$totalSubmissions Submissions', icon: Icons.quiz, color: Colors.indigo),
+                  StatCard(title: 'Total Courses', value: stats.totalCourses.toString(), subtitle: '${stats.publishedCourses} Published', icon: Icons.book, color: Colors.blue),
+                  StatCard(title: 'Total Students', value: stats.totalStudents.toString(), subtitle: '${stats.activeStudents} Active', icon: Icons.people, color: Colors.green),
+                  StatCard(title: 'Avg Rating', value: stats.averageRating.toStringAsFixed(1), subtitle: '${stats.totalReviews} Reviews', icon: Icons.star, color: Colors.purple),
                 ],
               ),
-
               const SizedBox(height: 24),
-
-              Card(
-                elevation: 3,
-                margin: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: Text("Monthly Earnings", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    ),
-                    SizedBox(height: 200, child: EarningsChart(monthlyEarnings: earningsList),),
-                  ],
+              _buildCard(
+                title: 'Monthly Earnings',
+                child: SizedBox(
+                  height: 200,
+                  child: EarningsChart(monthlyEarnings: provider.monthlyEarningsList),
                 ),
               ),
-
               const SizedBox(height: 24),
-
-              _buildCard(
-                title: 'Top Performing Courses',
-                child: _buildTopCourses(uid),
-              ),
-
+              _buildCard(title: 'Top Performing Courses', child: _buildTopCourses(uid)),
               const SizedBox(height: 24),
-
               _buildCard(
                 title: 'Recent Activity',
-                trailing: TextButton(
-                  onPressed: () {},
-                  child: const Text('View All'),
-                ),
+                trailing: TextButton(onPressed: () {}, child: const Text('View All')),
                 child: Column(
-                  children: provider.announcements
-                      .take(3)
-                      .map((a) => RecentActivityCard(announcement: a))
-                      .toList(),
+                  children: provider.announcements.take(3).map((a) => RecentActivityCard(announcement: a)).toList(),
                 ),
               ),
-
               const SizedBox(height: 24),
-
               _buildCard(
                 title: 'Latest Discussions',
                 trailing: TextButton(
-                  onPressed: () {
-                    Navigator.of(context).push(MaterialPageRoute(builder: (context){
-                      return ForumsScreen();
-                    }));
-                  },
+                  onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ForumsScreen())),
                   child: const Text('View All'),
                 ),
                 child: _buildDiscussions(),
@@ -289,33 +217,26 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                       color: AppColors.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.book,
-                        color: AppColors.primary, size: 20),
+                    child: const Icon(Icons.book, color: AppColors.primary, size: 20),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(course['courseName'],
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w600, fontSize: 14)),
+                        Text(course['courseName'], style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
                         Text(
                           '${course['enrollments']} students • \$${course['revenue'].toStringAsFixed(0)}',
-                          style: TextStyle(
-                              color: Colors.grey[600], fontSize: 12),
+                          style: TextStyle(color: Colors.grey[600], fontSize: 12),
                         ),
                       ],
                     ),
                   ),
                   Row(
                     children: [
-                      const Icon(Icons.star,
-                          color: Colors.amber, size: 16),
+                      const Icon(Icons.star, color: Colors.amber, size: 16),
                       const SizedBox(width: 4),
-                      Text(course['rating'].toStringAsFixed(1),
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w600, fontSize: 14)),
+                      Text(course['rating'].toStringAsFixed(1), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
                     ],
                   ),
                 ],
@@ -348,8 +269,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
 
             return ListTile(
               contentPadding: EdgeInsets.zero,
-              title: Text(data['title'] ?? 'No title',
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              title: Text(data['title'] ?? 'No title', style: const TextStyle(fontWeight: FontWeight.bold)),
               subtitle: Text(
                 '${data['author'] ?? 'Unknown'} • ${data['category'] ?? ''}',
                 style: TextStyle(color: Colors.grey[600]),
@@ -369,17 +289,18 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     );
   }
 
-  Widget _buildCard({
-    required String title,
-    Widget? trailing,
-    required Widget child,
-  }) {
+  Widget _buildCard({required String title, Widget? trailing, required Widget child}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? AppColors.cardDark : Colors.white;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
+        boxShadow: isDark
+            ? []
+            : [
           BoxShadow(
             color: Colors.grey.withOpacity(0.1),
             spreadRadius: 1,
@@ -394,9 +315,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title,
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               if (trailing != null) trailing,
             ],
           ),

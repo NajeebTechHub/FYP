@@ -19,12 +19,14 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
   final Map<int, bool> _expandedModules = {};
   late String userId;
   List<String> completedLessons = [];
+  late Future<List<Map<String, dynamic>>> _modulesFuture;
 
   @override
   void initState() {
     super.initState();
     userId = FirebaseAuth.instance.currentUser!.uid;
     fetchCompletedLessons();
+    _modulesFuture = fetchModulesWithLessons(widget.course.id);
   }
 
   Future<void> fetchCompletedLessons() async {
@@ -94,7 +96,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
             const Text('Modules & Lessons', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             FutureBuilder<List<Map<String, dynamic>>>(
-              future: fetchModulesWithLessons(course.id),
+              future: _modulesFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -307,15 +309,6 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
         showCertificateDetailsSheet(context, certificate, studentName: studentName);
       });
     }
-  }
-
-
-  Future<String> fetchStudentName(String uid) async {
-    final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-    if (userDoc.exists && userDoc.data() != null) {
-      return userDoc.data()!['name'] ?? 'Student';
-    }
-    return 'Student';
   }
 }
 

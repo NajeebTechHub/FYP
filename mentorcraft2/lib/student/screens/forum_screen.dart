@@ -32,14 +32,22 @@ class _ForumsScreenState extends State<ForumsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Discussion Forums')),
+      backgroundColor: theme.colorScheme.background,
+      appBar: AppBar(
+        title: const Text('Discussion Forums'),
+        backgroundColor: AppColors.darkBlue,
+        foregroundColor: theme.textTheme.titleLarge!.color,
+        elevation: 0,
+        centerTitle: true,
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _buildSearchBar(),
+          _buildSearchBar(theme),
           const SizedBox(height: 16),
-          _buildCategoryTabs(),
+          _buildCategoryTabs(theme),
           const SizedBox(height: 16),
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
@@ -52,7 +60,7 @@ class _ForumsScreenState extends State<ForumsScreen> {
               }
 
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return const Text('No discussions yet.');
+                return Text('No discussions yet.', style: theme.textTheme.bodyMedium);
               }
 
               final docs = snapshot.data!.docs.where((doc) {
@@ -60,35 +68,30 @@ class _ForumsScreenState extends State<ForumsScreen> {
                 final category = data['category'] ?? '';
                 final title = (data['title'] ?? '').toString().toLowerCase();
 
-                final matchesCategory =
-                    selectedCategory == 'All' || category == selectedCategory;
-                final matchesSearch =
-                    searchQuery.isEmpty || title.contains(searchQuery.toLowerCase());
+                final matchesCategory = selectedCategory == 'All' || category == selectedCategory;
+                final matchesSearch = searchQuery.isEmpty || title.contains(searchQuery.toLowerCase());
 
                 return matchesCategory && matchesSearch;
               }).toList();
 
               if (docs.isEmpty) {
-                return const Text('No discussions found.');
+                return Text('No discussions found.', style: theme.textTheme.bodyMedium);
               }
 
               return Column(
                 children: docs.map((doc) {
                   final data = doc.data() as Map<String, dynamic>;
                   final ts = data['timestamp'] as Timestamp?;
-                  final String timeAgo =
-                  ts != null ? timeago.format(ts.toDate()) : 'some time ago';
-                  final bool isCurrentUserPost = data['uid'] == currentUser?.uid;
+                  final timeAgo = ts != null ? timeago.format(ts.toDate()) : 'some time ago';
+                  final isCurrentUserPost = data['uid'] == currentUser?.uid;
 
                   final rawLikes = data['likes'];
-                  final Map<String, dynamic> likesMap =
-                  rawLikes is Map<String, dynamic> ? rawLikes : {};
-                  final hasLiked =
-                      currentUser != null && likesMap.containsKey(currentUser!.uid);
+                  final Map<String, dynamic> likesMap = rawLikes is Map<String, dynamic> ? rawLikes : {};
+                  final hasLiked = currentUser != null && likesMap.containsKey(currentUser!.uid);
                   final totalLikes = likesMap.length;
 
-                  return _buildDiscussionTopic(
-                    context,
+                  return _buildDiscussionCard(
+                    context: context,
                     title: data['title'] ?? '',
                     author: data['author'] ?? 'Unknown',
                     uid: data['uid'] ?? '',
@@ -100,6 +103,7 @@ class _ForumsScreenState extends State<ForumsScreen> {
                     category: data['category'] ?? '',
                     totalLikes: totalLikes,
                     hasLiked: hasLiked,
+                    theme: theme,
                   );
                 }).toList(),
               );
@@ -108,40 +112,38 @@ class _ForumsScreenState extends State<ForumsScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColors.darkBlue,
+        child: const Icon(Icons.add_comment, color: Colors.white),
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const AddDiscussionScreen()),
           );
         },
-        backgroundColor: AppColors.darkBlue,
-        child: const Icon(Icons.add_comment, color: Colors.white),
       ),
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(ThemeData theme) {
     return TextField(
-      onChanged: (value) {
-        setState(() {
-          searchQuery = value;
-        });
-      },
+      onChanged: (value) => setState(() => searchQuery = value),
+      style: theme.textTheme.bodyMedium,
       decoration: InputDecoration(
-        hintText: 'Search discussions...',
+        hintText: 'Search discussions...'
+        ,
+        hintStyle: theme.textTheme.bodySmall,
         prefixIcon: const Icon(Icons.search),
+        filled: true,
+        fillColor: theme.cardColor,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide.none,
         ),
-        filled: true,
-        fillColor: Colors.grey[100],
-        contentPadding: const EdgeInsets.symmetric(vertical: 0),
       ),
     );
   }
 
-  Widget _buildCategoryTabs() {
+  Widget _buildCategoryTabs(ThemeData theme) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -152,16 +154,12 @@ class _ForumsScreenState extends State<ForumsScreen> {
             child: FilterChip(
               label: Text(label),
               selected: isSelected,
-              onSelected: (_) {
-                setState(() {
-                  selectedCategory = label;
-                });
-              },
-              backgroundColor: Colors.grey[200],
-              selectedColor: AppColors.primary.withOpacity(0.2),
+              onSelected: (_) => setState(() => selectedCategory = label),
+              backgroundColor: theme.cardColor,
+              selectedColor: AppColors.primary.withOpacity(0.3),
               labelStyle: TextStyle(
-                color: isSelected ? AppColors.primary : AppColors.textPrimary,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected ? AppColors.primary : theme.textTheme.bodySmall!.color,
+                fontWeight: FontWeight.w500,
               ),
               checkmarkColor: AppColors.primary,
             ),
@@ -171,229 +169,152 @@ class _ForumsScreenState extends State<ForumsScreen> {
     );
   }
 
-  Widget _buildDiscussionTopic(
-      BuildContext context, {
-        required String title,
-        required String author,
-        required String uid,
-        required String timeAgo,
-        required int replies,
-        required bool isHot,
-        required String docId,
-        required bool showActions,
-        required String category,
-        required int totalLikes,
-        required bool hasLiked,
-      }) {
+  Widget _buildDiscussionCard({
+    required BuildContext context,
+    required String title,
+    required String author,
+    required String uid,
+    required String timeAgo,
+    required int replies,
+    required bool isHot,
+    required String docId,
+    required bool showActions,
+    required String category,
+    required int totalLikes,
+    required bool hasLiked,
+    required ThemeData theme,
+  }) {
     final imageUrl =
         'https://tqzoozpckrmmprwnhweg.supabase.co/storage/v1/object/public/profile-images/public/$uid.jpg';
 
     return Card(
+      color: theme.cardColor,
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 1,
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: Colors.grey[200],
-                  child: ClipOval(
-                    child: Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      width: 40,
-                      height: 40,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Center(
-                          child: Text(
-                            author.isNotEmpty ? author[0].toUpperCase() : '?',
-                            style: const TextStyle(
-                              color: AppColors.darkBlue,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        );
-                      },
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: Colors.grey[800],
+                child: ClipOval(
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.cover,
+                    width: 40,
+                    height: 40,
+                    errorBuilder: (_, __, ___) => Center(
+                      child: Text(
+                        author.isNotEmpty ? author[0].toUpperCase() : '?',
+                        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              title,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    Expanded(
+                      child: Text(title,
+                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                    ),
+                    if (isHot)
+                      Container(
+                        margin: const EdgeInsets.only(left: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.accent.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Row(
+                          children: const [
+                            Icon(Icons.local_fire_department, color: AppColors.accent, size: 14),
+                            SizedBox(width: 4),
+                            Text('Hot', style: TextStyle(color: AppColors.accent, fontSize: 12, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    if (showActions)
+                      PopupMenuButton<String>(
+                        onSelected: (value) {
+                          if (value == 'edit') {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => EditDiscussionScreen(docId: docId, currentTitle: title),
                               ),
-                            ),
-                          ),
-                          if (isHot)
-                            Container(
-                              margin: const EdgeInsets.only(left: 8),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: AppColors.accent.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Row(
-                                children: const [
-                                  Icon(Icons.local_fire_department,
-                                      color: AppColors.accent, size: 14),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'Hot',
-                                    style: TextStyle(
-                                      color: AppColors.accent,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          if (showActions)
-                            PopupMenuButton<String>(
-                              onSelected: (value) {
-                                if (value == 'edit') {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => EditDiscussionScreen(
-                                        docId: docId,
-                                        currentTitle: title,
-                                      ),
-                                    ),
-                                  );
-                                } else if (value == 'delete') {
-                                  FirebaseFirestore.instance
-                                      .collection('discussions')
-                                      .doc(docId)
-                                      .delete();
-                                }
-                              },
-                              itemBuilder: (context) => const [
-                                PopupMenuItem(
-                                  value: 'edit',
-                                  child: Text('Edit'),
-                                ),
-                                PopupMenuItem(
-                                  value: 'delete',
-                                  child: Text('Delete'),
-                                ),
-                              ],
-                            ),
+                            );
+                          } else if (value == 'delete') {
+                            FirebaseFirestore.instance.collection('discussions').doc(docId).delete();
+                          }
+                        },
+                        itemBuilder: (_) => const [
+                          PopupMenuItem(value: 'edit', child: Text('Edit')),
+                          PopupMenuItem(value: 'delete', child: Text('Delete')),
                         ],
-                      ),
-                      const SizedBox(height: 4),
+                      )
+                  ]),
+                  const SizedBox(height: 4),
+                  Text('Category: $category', style: TextStyle(fontSize: 12, color: AppColors.primary)),
+                  Text('Posted by $author • $timeAgo', style: theme.textTheme.bodySmall),
+                ]),
+              )
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () => _toggleLike(docId, hasLiked),
+                child: Row(
+                  children: [
+                    Icon(
+                      hasLiked ? Icons.favorite : Icons.favorite_border,
+                      size: 16,
+                      color: hasLiked ? Colors.red : theme.iconTheme.color,
+                    ),
+                    const SizedBox(width: 4),
+                    Text('$totalLikes likes', style: theme.textTheme.bodySmall),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => DiscussionDetailScreen(docId: docId, title: title),
+                    ),
+                  );
+                },
+                child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Icon(Icons.comment_outlined, size: 16, color: Theme.of(context).iconTheme.color),
+                      const SizedBox(width: 4),
                       Text(
-                        'Category: $category',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      Text(
-                        'Posted by $author • $timeAgo',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        '$replies replies',
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => _toggleLike(docId, hasLiked),
-                    child: Row(
-                      children: [
-                        Icon(
-                          hasLiked ? Icons.favorite : Icons.favorite_border,
-                          size: 16,
-                          color: hasLiked ? Colors.red : AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$totalLikes likes',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => DiscussionDetailScreen(
-                            docId: docId,
-                            title: title,
-                          ),
-                        ),
-                      );
-                    },
-                    child: _buildInfoChip(Icons.comment_outlined, '$replies replies'),
-                  ),
-                  const Spacer(),
-                  // IconButton(
-                  //   icon: const Icon(Icons.bookmark_border,
-                  //       color: AppColors.textSecondary),
-                  //   onPressed: () {},
-                  //   padding: EdgeInsets.zero,
-                  //   constraints: const BoxConstraints(),
-                  // ),
-                  const SizedBox(width: 16),
-                  IconButton(
-                    icon: const Icon(Icons.share_outlined,
-                        color: AppColors.textSecondary),
-                    onPressed: () {
-                      Share.share('Check out this discussion: "$title" on MentorCraft.');
-                    },
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildInfoChip(IconData icon, String label) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: AppColors.textSecondary),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-        ),
-      ],
+                ),
+              const Spacer(),
+              IconButton(
+                icon: Icon(Icons.share_outlined, color: theme.iconTheme.color),
+                onPressed: () => Share.share('Check out this discussion: "$title" on MentorCraft.'),
+              ),
+            ],
+          ),
+        ]),
+      ),
     );
   }
 
@@ -402,14 +323,12 @@ class _ForumsScreenState extends State<ForumsScreen> {
     if (uid == null) return;
 
     final postRef = FirebaseFirestore.instance.collection('discussions').doc(docId);
-
     await FirebaseFirestore.instance.runTransaction((transaction) async {
       final snapshot = await transaction.get(postRef);
       final data = snapshot.data() as Map<String, dynamic>;
       final rawLikes = data['likes'];
-      final Map<String, dynamic> likesMap = rawLikes is Map<String, dynamic>
-          ? Map<String, dynamic>.from(rawLikes)
-          : {};
+      final Map<String, dynamic> likesMap =
+      rawLikes is Map<String, dynamic> ? Map<String, dynamic>.from(rawLikes) : {};
 
       if (hasLiked) {
         likesMap.remove(uid);

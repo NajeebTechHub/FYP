@@ -5,6 +5,7 @@ import 'package:mentorcraft2/student/screens/progress_tracking/analytics_tab.dar
 import 'package:mentorcraft2/student/screens/progress_tracking/certificate_tab.dart';
 import 'package:mentorcraft2/student/screens/progress_tracking/overview.dart';
 import '../models/course_progress.dart';
+import 'package:mentorcraft2/theme/color.dart';
 
 class ProgressTrackingScreen extends StatefulWidget {
   const ProgressTrackingScreen({Key? key}) : super(key: key);
@@ -40,7 +41,6 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> with Ti
 
   Future<List<CourseProgress>> _fetchCourseProgress(String uid) async {
     final coursesSnapshot = await FirebaseFirestore.instance.collection('courses').get();
-
     List<CourseProgress> progressList = [];
 
     for (var courseDoc in coursesSnapshot.docs) {
@@ -48,11 +48,7 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> with Ti
       final courseTitle = courseData['title'] ?? 'Unknown Course';
       final level = courseData['level'] ?? 'General';
 
-      final enrolledUserDoc = await courseDoc.reference
-          .collection('enrolledUsers')
-          .doc(uid)
-          .get();
-
+      final enrolledUserDoc = await courseDoc.reference.collection('enrolledUsers').doc(uid).get();
       if (enrolledUserDoc.exists) {
         final userData = enrolledUserDoc.data();
         final progress = (userData?['progress'] ?? 0.0) as double;
@@ -63,7 +59,7 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> with Ti
             courseName: courseTitle,
             category: level,
             percentComplete: progress,
-            totalMinutes: 0, // You can update this if needed later
+            totalMinutes: 0,
             minutesCompleted: 0,
             lastAccessed: DateTime.now(),
             courseStartDate: DateTime.now(),
@@ -75,9 +71,6 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> with Ti
 
     return progressList;
   }
-
-
-
 
   Future<List<Certificate>> _fetchCertificates(String uid) async {
     final snap = await FirebaseFirestore.instance
@@ -98,20 +91,32 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> with Ti
   @override
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.shortestSide >= 600;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Progress Tracker'),
+        title: Text(
+          'Progress Tracker',
+          style: TextStyle(
+            color: theme.appBarTheme.titleTextStyle?.color ?? (isDark ? AppColors.textLight : Colors.black),
+          ),
+        ),
+        backgroundColor: AppColors.darkBlue,
+        iconTheme: theme.iconTheme,
         bottom: TabBar(
           controller: _tabController,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.grey,
+          labelColor: isDark ? AppColors.textLight : Colors.white,
+          unselectedLabelColor: AppColors.textFaded,
+          indicatorColor: isDark ? AppColors.textLight : Colors.white,
           tabs: const [
             Tab(text: 'Overview'),
             Tab(text: 'Analytics'),

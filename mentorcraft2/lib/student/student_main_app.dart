@@ -6,7 +6,6 @@ import 'package:mentorcraft2/student/screens/my_courses_screen.dart';
 import 'package:mentorcraft2/student/screens/profile_screen.dart';
 import 'package:mentorcraft2/student/widgets/main_widgets/app_drawer.dart';
 import 'package:mentorcraft2/teacher/screens/teacher_main_screen.dart';
-
 import '../theme/color.dart';
 
 class StudentMainScreen extends StatefulWidget {
@@ -85,41 +84,13 @@ class _StudentMainScreenState extends State<StudentMainScreen> with SingleTicker
           },
         ),
         actions: [
-          // Notifications icon with badge
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined),
-                onPressed: () {
-                  Navigator.of(context).push(MaterialPageRoute(builder: (context){
-                    return TeacherMainScreen();
-                  }));
-                  // Navigation for notifications
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Notifications coming soon!'),
-                      duration: Duration(seconds: 1),
-                    ),
-                  );
-                },
-              ),
-              Positioned(
-                top: 10,
-                right: 10,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: AppColors.accent,
-                    shape: BoxShape.circle,
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 12,
-                    minHeight: 12,
-                  ),
-                ),
-              ),
-            ],
+          IconButton(
+            icon: Icon(Icons.switch_account),
+            onPressed: () {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => TeacherMainScreen()),
+              );
+            },
           ),
         ],
       ),

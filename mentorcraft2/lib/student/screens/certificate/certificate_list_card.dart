@@ -19,6 +19,9 @@ class CertificateListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     final delayedAnimation = CurvedAnimation(
       parent: animationController,
       curve: Interval(
@@ -40,14 +43,15 @@ class CertificateListCard extends StatelessWidget {
           child: Container(
             height: 153,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: theme.cardColor,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
+                if (!isDark)
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
               ],
             ),
             child: Row(
@@ -56,7 +60,7 @@ class CertificateListCard extends StatelessWidget {
                   width: 120,
                   height: 150,
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
+                    color: isDark ? Colors.grey.shade900 : Colors.blue.shade50,
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(16),
                       bottomLeft: Radius.circular(16),
@@ -75,27 +79,23 @@ class CertificateListCard extends StatelessWidget {
                           certificate.courseName,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 16,
+                          style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Instructor: ${certificate.instructor}',
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade600,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.textTheme.bodyMedium?.color?.withOpacity(0.75),
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Issued: ${DateFormat('MMMM d, yyyy').format(certificate.issueDate)}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade500,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
                           ),
                         ),
                       ],
@@ -111,6 +111,8 @@ class CertificateListCard extends StatelessWidget {
   }
 
   Widget _buildStatusRow(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Row(
       children: [
         Container(
@@ -122,7 +124,11 @@ class CertificateListCard extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(certificate.getStatusIcon(), size: 12, color: certificate.getStatusColor()),
+              Icon(
+                certificate.getStatusIcon(),
+                size: 12,
+                color: certificate.getStatusColor(),
+              ),
               const SizedBox(width: 4),
               Text(
                 certificate.getStatusText(),
@@ -136,11 +142,15 @@ class CertificateListCard extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        Text(
-          certificate.id,
-          style: TextStyle(
-            fontSize: 10,
-            color: Colors.grey.shade500,
+        Flexible(
+          child: Text(
+            certificate.id,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontSize: 10,
+              color: theme.textTheme.bodySmall?.color?.withOpacity(0.5),
+            ),
           ),
         ),
       ],

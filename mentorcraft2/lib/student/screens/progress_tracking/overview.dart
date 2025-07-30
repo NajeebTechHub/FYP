@@ -34,7 +34,7 @@ class _OverviewTabState extends State<OverviewTab> {
     "Success is not final, failure is not fatal: it is the courage to continue that counts.",
     "Believe you can and you're halfway there.",
     "The beautiful thing about learning is nobody can take it away from you.",
-    "Education is the most powerful weapon which you can use to change the world.",
+    "Education is the most powerful weapon which you can use to change the world."
   ];
 
   @override
@@ -57,9 +57,7 @@ class _OverviewTabState extends State<OverviewTab> {
     try {
       final learningHours = await calculateLearningHours(userId);
       setState(() {
-        _progressSummary = _progressSummary.copyWith(
-          totalLearningHours: learningHours,
-        );
+        _progressSummary = _progressSummary.copyWith(totalLearningHours: learningHours);
       });
     } catch (e) {
       debugPrint("Error calculating learning hours: $e");
@@ -68,34 +66,20 @@ class _OverviewTabState extends State<OverviewTab> {
 
   Future<int> calculateLearningHours(String userId) async {
     int totalMinutes = 0;
-
     final coursesSnapshot = await FirebaseFirestore.instance.collection('courses').get();
 
     for (final courseDoc in coursesSnapshot.docs) {
-      final enrolledUserDoc = await courseDoc.reference
-          .collection('enrolledUsers')
-          .doc(userId)
-          .get();
-
-      if (!enrolledUserDoc.exists) {
-        print("User not enrolled in course ${courseDoc.id}");
-        continue;
-      }
+      final enrolledUserDoc = await courseDoc.reference.collection('enrolledUsers').doc(userId).get();
+      if (!enrolledUserDoc.exists) continue;
 
       final enrolledData = enrolledUserDoc.data();
-      if (enrolledData == null || !enrolledData.containsKey('completedLessons')) {
-        print("No completedLessons for course ${courseDoc.id}");
-        continue;
-      }
+      if (enrolledData == null || !enrolledData.containsKey('completedLessons')) continue;
 
       final completedLessonIds = List<String>.from(enrolledData['completedLessons']);
-      print("✅ ${courseDoc.id} completed lessons: $completedLessonIds");
-
       final modulesSnapshot = await courseDoc.reference.collection('modules').get();
 
       for (final moduleDoc in modulesSnapshot.docs) {
         final lessonsSnapshot = await moduleDoc.reference.collection('lessons').get();
-
         for (final lessonDoc in lessonsSnapshot.docs) {
           final lessonId = lessonDoc.id;
 
@@ -113,31 +97,27 @@ class _OverviewTabState extends State<OverviewTab> {
             }
 
             if (duration != null) {
-              print("🕒 Adding $duration min from lesson $lessonId");
               totalMinutes += duration;
-            } else {
-              print("⚠️ Invalid duration for lesson $lessonId: $durationRaw");
             }
           }
         }
       }
     }
 
-    final totalHours = (totalMinutes / 60).floor();
-    print("🎯 Total learning hours: $totalHours");
-    return totalHours;
+    return (totalMinutes / 60).floor();
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildTimeFrameSelector(),
-          _buildSummaryCards(widget.isTablet),
-          _buildMotivationalQuote(),
+          _buildTimeFrameSelector(theme),
+          _buildSummaryCards(widget.isTablet, theme),
+          _buildMotivationalQuote(theme),
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
             child: Text(
@@ -156,30 +136,28 @@ class _OverviewTabState extends State<OverviewTab> {
     );
   }
 
-  Widget _buildTimeFrameSelector() {
+  Widget _buildTimeFrameSelector(ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.darkBlue.withOpacity(0.05),
+          color: theme.colorScheme.surface.withOpacity(0.1),
           borderRadius: BorderRadius.circular(16),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: DropdownButton<String>(
           value: _selectedTimeFrame,
-          icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.darkBlue),
+          icon: Icon(Icons.keyboard_arrow_down, color: theme.colorScheme.primary),
           elevation: 1,
           underline: const SizedBox(),
-          style: const TextStyle(
-            color: AppColors.darkBlue,
+          style: TextStyle(
+            color: theme.colorScheme.primary,
             fontWeight: FontWeight.w500,
             fontSize: 16,
           ),
           onChanged: (String? newValue) {
             if (newValue != null) {
-              setState(() {
-                _selectedTimeFrame = newValue;
-              });
+              setState(() => _selectedTimeFrame = newValue);
             }
           },
           borderRadius: BorderRadius.circular(12),
@@ -194,14 +172,12 @@ class _OverviewTabState extends State<OverviewTab> {
     );
   }
 
-  Widget _buildSummaryCards(bool isTablet) {
+  Widget _buildSummaryCards(bool isTablet, ThemeData theme) {
     Widget buildCard(String title, String value, IconData icon, Color color) {
       return Expanded(
         child: Card(
           elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -214,15 +190,15 @@ class _OverviewTabState extends State<OverviewTab> {
                   style: TextStyle(
                     fontSize: isTablet ? 28 : 22,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: theme.textTheme.bodyLarge?.color,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.textSecondary,
+                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -261,12 +237,10 @@ class _OverviewTabState extends State<OverviewTab> {
     }
   }
 
-  Widget _buildMotivationalQuote() {
+  Widget _buildMotivationalQuote(ThemeData theme) {
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _currentQuoteIndex = (_currentQuoteIndex + 1) % _motivationalQuotes.length;
-        });
+        setState(() => _currentQuoteIndex = (_currentQuoteIndex + 1) % _motivationalQuotes.length);
       },
       child: Container(
         margin: const EdgeInsets.all(16),
@@ -275,18 +249,11 @@ class _OverviewTabState extends State<OverviewTab> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              AppColors.primary.withOpacity(0.7),
-              AppColors.darkBlue,
-            ],
+            colors: [AppColors.primary.withOpacity(0.7), AppColors.darkBlue],
           ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
+            BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4)),
           ],
         ),
         child: Row(
@@ -310,10 +277,7 @@ class _OverviewTabState extends State<OverviewTab> {
                   const SizedBox(height: 8),
                   const Text(
                     'Tap to see another quote',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 ],
               ),

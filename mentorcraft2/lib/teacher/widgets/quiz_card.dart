@@ -19,19 +19,22 @@ class QuizCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final teacherProvider = Provider.of<TeacherProvider>(context, listen: false);
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppColors.cardDark : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 6,
-            offset: const Offset(0, 8),
-          ),
+          if (!isDark)
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 6,
+              offset: const Offset(0, 8),
+            ),
         ],
       ),
       child: Padding(
@@ -39,7 +42,6 @@ class QuizCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with title & course
             Row(
               children: [
                 Container(
@@ -55,8 +57,11 @@ class QuizCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(quiz.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      Text(quiz.courseName, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                      Text(quiz.title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                      Text(
+                        quiz.courseName,
+                        style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textFaded),
+                      ),
                     ],
                   ),
                 ),
@@ -74,50 +79,46 @@ class QuizCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-
             if (quiz.description.isNotEmpty)
-              Text(quiz.description, style: TextStyle(fontSize: 14, color: Colors.grey[600]), maxLines: 2, overflow: TextOverflow.ellipsis),
-
+              Text(
+                quiz.description,
+                style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textFaded),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             const SizedBox(height: 12),
-
             Wrap(
               spacing: 16,
               runSpacing: 8,
               children: [
-                _buildDetailItem(Icons.help_outline, '${quiz.questions.length} Questions'),
-                _buildDetailItem(Icons.timer, '${quiz.timeLimit} minutes'),
-                _buildDetailItem(Icons.repeat, '${quiz.attempts} attempts'),
-                _buildDetailItem(Icons.grade, '${quiz.passingPercentage.toInt()}% to pass'),
+                _buildDetailItem(Icons.help_outline, '${quiz.questions.length} Questions', theme),
+                _buildDetailItem(Icons.timer, '${quiz.timeLimit} minutes', theme),
+                _buildDetailItem(Icons.repeat, '${quiz.attempts} attempts', theme),
+                _buildDetailItem(Icons.grade, '${quiz.passingPercentage.toInt()}% to pass', theme),
               ],
             ),
             const SizedBox(height: 12),
-
-            // Submissions + created
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.grey[50],
+                color: isDark ? AppColors.cardDark.withOpacity(0.7) : Colors.grey[50],
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.assignment_turned_in, size: 20, color: Colors.grey[600]),
+                  Icon(Icons.assignment_turned_in, size: 20, color: AppColors.textFaded),
                   const SizedBox(width: 8),
-                  Text('${quiz.totalSubmissions} submissions', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                  Text('${quiz.totalSubmissions} submissions', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
                   const Spacer(),
-                  Text('Created ${_formatDate(quiz.createdAt)}', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                  Text('Created ${_formatDate(quiz.createdAt)}', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textFaded)),
                 ],
               ),
             ),
-
             const SizedBox(height: 16),
-
-            // Edit / Delete / Toggle
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Row(
                 children: [
-                  // Edit
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () => _showEditDialog(context, quiz, teacherProvider),
@@ -129,29 +130,23 @@ class QuizCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Toggle Active
                   Expanded(
                     child: IconButton(
                       onPressed: onToggleActive,
                       icon: Icon(quiz.isActive ? Icons.pause : Icons.play_arrow),
                       color: quiz.isActive ? Colors.orange : Colors.green,
-                      tooltip: quiz.isActive ? 'Deactivate Quiz' : 'Activate Quiz',
                     ),
                   ),
-                  // Delete
                   Expanded(
                     child: IconButton(
                       onPressed: () => _confirmDelete(context, quiz.id, teacherProvider),
                       icon: const Icon(Icons.delete),
                       color: Colors.red,
-                      tooltip: 'Delete Quiz',
                     ),
                   ),
                 ],
               ),
             ),
-
-            // View Submissions
             Row(
               children: [
                 const SizedBox(width: 8),
@@ -175,13 +170,13 @@ class QuizCard extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailItem(IconData icon, String text) {
+  Widget _buildDetailItem(IconData icon, String text, ThemeData theme) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: Colors.grey[600]),
+        Icon(icon, size: 14, color: AppColors.textFaded),
         const SizedBox(width: 4),
-        Text(text, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+        Text(text, style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textFaded)),
       ],
     );
   }
@@ -234,34 +229,28 @@ class QuizCard extends StatelessWidget {
               children: [
                 const Text('Edit Quiz', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
-
                 TextField(controller: titleController, decoration: const InputDecoration(labelText: 'Title')),
                 const SizedBox(height: 12),
-
                 TextField(controller: descController, decoration: const InputDecoration(labelText: 'Description')),
                 const SizedBox(height: 12),
-
                 TextField(
                   controller: timeLimitController,
                   decoration: const InputDecoration(labelText: 'Time Limit (minutes)'),
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 12),
-
                 TextField(
                   controller: attemptsController,
                   decoration: const InputDecoration(labelText: 'Attempts'),
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 12),
-
                 TextField(
                   controller: passingScoreController,
                   decoration: const InputDecoration(labelText: 'Passing Score (%)'),
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 20),
-
                 ElevatedButton.icon(
                   onPressed: () {
                     final updatedQuiz = quiz.copyWith(
@@ -272,8 +261,7 @@ class QuizCard extends StatelessWidget {
                       passingPercentage: double.tryParse(passingScoreController.text.trim()) ?? quiz.passingPercentage,
                       updatedAt: DateTime.now(),
                     );
-
-                    provider.updateQuiz(updatedQuiz); // Now updates full data
+                    provider.updateQuiz(updatedQuiz);
                     Navigator.pop(context);
                   },
                   icon: const Icon(Icons.save),
@@ -287,5 +275,4 @@ class QuizCard extends StatelessWidget {
       },
     );
   }
-
 }

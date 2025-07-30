@@ -9,12 +9,15 @@ class QuizScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? AppColors.textLight : AppColors.textPrimary;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Quizzes & Assessments')),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('quizzes')
-            .where('isActive', isEqualTo: true) // ✅ Only active quizzes
+            .where('isActive', isEqualTo: true)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -22,7 +25,12 @@ class QuizScreen extends StatelessWidget {
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text('No active quizzes available.'));
+            return Center(
+              child: Text(
+                'No active quizzes available.',
+                style: TextStyle(color: textColor),
+              ),
+            );
           }
 
           final quizzes = snapshot.data!.docs.map((doc) {
@@ -30,16 +38,16 @@ class QuizScreen extends StatelessWidget {
           }).toList();
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Available Quizzes',
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.darkBlue,
+                    color: textColor,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -52,29 +60,14 @@ class QuizScreen extends StatelessWidget {
     );
   }
 
-  String _getLevelFromPassingScore(double score) {
-    if (score <= 40) return 'Beginner';
-    if (score <= 70) return 'Intermediate';
-    return 'Advanced';
-  }
-
   Widget _buildQuizCard(BuildContext context, TeacherQuiz quiz, double progress) {
-    final String level = _getLevelFromPassingScore(quiz.passingScore);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? AppColors.cardDark : AppColors.white;
+    final textColor = isDark ? AppColors.textLight : AppColors.textPrimary;
+    final subTextColor = isDark ? AppColors.textLight.withOpacity(0.7) : AppColors.textSecondary;
 
-    Color levelColor;
-    switch (level.toLowerCase()) {
-      case 'beginner':
-        levelColor = Colors.green;
-        break;
-      case 'intermediate':
-        levelColor = Colors.orange;
-        break;
-      case 'advanced':
-        levelColor = Colors.red;
-        break;
-      default:
-        levelColor = Colors.blue;
-    }
+    final level = _getLevelFromPassingScore(quiz.passingScore);
+    final levelColor = _getLevelColor(level);
 
     String statusText;
     Color statusColor;
@@ -91,6 +84,7 @@ class QuizScreen extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
+      color: cardColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 2,
       child: Padding(
@@ -105,7 +99,11 @@ class QuizScreen extends StatelessWidget {
                 Expanded(
                   child: Text(
                     quiz.title,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                    ),
                   ),
                 ),
                 Container(
@@ -113,7 +111,7 @@ class QuizScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: levelColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: levelColor, width: 1),
+                    border: Border.all(color: levelColor),
                   ),
                   child: Text(
                     level,
@@ -127,25 +125,31 @@ class QuizScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            Text(quiz.description, style: const TextStyle(color: AppColors.textSecondary)),
+            Text(
+              quiz.description,
+              style: TextStyle(color: subTextColor),
+            ),
             const SizedBox(height: 12),
             Row(
               children: [
-                const Icon(Icons.help_outline, size: 16, color: AppColors.textSecondary),
+                Icon(Icons.help_outline, size: 16, color: subTextColor),
                 const SizedBox(width: 4),
-                Text('${quiz.questions.length} Questions', style: const TextStyle(color: AppColors.textSecondary)),
+                Text('${quiz.questions.length} Questions', style: TextStyle(color: subTextColor)),
                 const SizedBox(width: 16),
-                const Icon(Icons.timer_outlined, size: 16, color: AppColors.textSecondary),
+                Icon(Icons.timer_outlined, size: 16, color: subTextColor),
                 const SizedBox(width: 4),
-                Text('${quiz.timeLimit} Minutes', style: const TextStyle(color: AppColors.textSecondary)), // ✅ Using Firestore value
+                Text('${quiz.timeLimit} Minutes', style: TextStyle(color: subTextColor)),
                 const Spacer(),
-                Text(statusText, style: TextStyle(color: statusColor, fontWeight: FontWeight.bold)),
+                Text(
+                  statusText,
+                  style: TextStyle(color: statusColor, fontWeight: FontWeight.bold),
+                ),
               ],
             ),
             const SizedBox(height: 16),
             LinearProgressIndicator(
               value: progress,
-              backgroundColor: Colors.grey[200],
+              backgroundColor: isDark ? Colors.grey[700] : Colors.grey[200],
               valueColor: AlwaysStoppedAnimation<Color>(
                 progress == 1.0 ? Colors.green : AppColors.primary,
               ),
@@ -157,13 +161,12 @@ class QuizScreen extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => QuizTakingScreen(quiz: quiz,),
-                      ),
-                    );
-
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => QuizTakingScreen(quiz: quiz),
+                    ),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.darkBlue,
@@ -184,5 +187,24 @@ class QuizScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _getLevelFromPassingScore(double score) {
+    if (score <= 40) return 'Beginner';
+    if (score <= 70) return 'Intermediate';
+    return 'Advanced';
+  }
+
+  Color _getLevelColor(String level) {
+    switch (level.toLowerCase()) {
+      case 'beginner':
+        return Colors.green;
+      case 'intermediate':
+        return Colors.orange;
+      case 'advanced':
+        return Colors.red;
+      default:
+        return Colors.blue;
+    }
   }
 }

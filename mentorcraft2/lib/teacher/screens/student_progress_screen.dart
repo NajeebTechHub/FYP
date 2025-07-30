@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mentorcraft2/auth/simple_auth_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:mentorcraft2/teacher/provider/teacher_provider.dart';
+import '../../theme/color.dart';
 import '../models/student_progress.dart';
 import '../widgets/student_progress_card.dart';
 
@@ -21,8 +22,8 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final currentUserId = Provider.of<SimpleAuthProvider>(context, listen: false).user?.id ?? '';
-      Provider.of<TeacherProvider>(context, listen: false).fetchStudentProgress(currentUserId);
+      final userId = Provider.of<SimpleAuthProvider>(context, listen: false).user?.id ?? '';
+      Provider.of<TeacherProvider>(context, listen: false).fetchStudentProgress(userId);
     });
   }
 
@@ -35,37 +36,35 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? AppColors.darkBackground : Colors.white;
+    final inputFill = isDark ? AppColors.cardDark : Colors.grey[100];
+    final fadedText = isDark ? AppColors.textFaded : Colors.grey[600];
+
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: isDark ? AppColors.darkBackground : Colors.grey[50],
       body: Consumer<TeacherProvider>(
-        builder: (context, teacherProvider, child) {
+        builder: (context, teacherProvider, _) {
           final isLoading = !teacherProvider.isStudentProgressLoaded;
           final progressList = teacherProvider.studentProgress;
 
-          List<StudentProgress> filteredStudents = progressList.where((student) {
+          final filtered = progressList.where((student) {
             final matchesCourse = _selectedCourse == 'all' || student.courseId == _selectedCourse;
-
-            final derivedStatus = _deriveStatus(student);
-            final matchesStatus = _selectedStatus == 'all' || derivedStatus == _selectedStatus;
-
-            final matchesSearch = student.studentName.toLowerCase().contains(_searchQuery.trim().toLowerCase()) ||
-                student.studentEmail.toLowerCase().contains(_searchQuery.trim().toLowerCase());
-
+            final status = _deriveStatus(student);
+            final matchesStatus = _selectedStatus == 'all' || status == _selectedStatus;
+            final matchesSearch = student.studentName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                student.studentEmail.toLowerCase().contains(_searchQuery.toLowerCase());
             return matchesCourse && matchesStatus && matchesSearch;
           }).toList();
 
-          final total = filteredStudents.length;
-          final active = filteredStudents.where((s) {
-            final st = _deriveStatus(s);
-            return st == 'enrolled' || st == 'in_progress';
-          }).length;
-          final completed = filteredStudents.where((s) => _deriveStatus(s) == 'completed').length;
+          final total = filtered.length;
+          final active = filtered.where((s) => ['enrolled', 'in_progress'].contains(_deriveStatus(s))).length;
+          final completed = filtered.where((s) => _deriveStatus(s) == 'completed').length;
 
           return Column(
             children: [
-              // Filters
               Container(
-                color: Colors.white,
+                color: bgColor,
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
@@ -78,7 +77,7 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
                           borderSide: BorderSide.none,
                         ),
                         filled: true,
-                        fillColor: Colors.grey[100],
+                        fillColor: inputFill,
                       ),
                       onChanged: (value) => setState(() => _searchQuery = value),
                     ),
@@ -89,7 +88,7 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
                           child: DropdownButtonFormField<String>(
                             isExpanded: true,
                             value: _selectedCourse,
-                            decoration: _dropdownDecoration(),
+                            decoration: _dropdownDecoration(inputFill!),
                             items: [
                               const DropdownMenuItem(value: 'all', child: Text('All Courses')),
                               ...teacherProvider.courses.map((course) => DropdownMenuItem(
@@ -105,7 +104,7 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
                           child: DropdownButtonFormField<String>(
                             isExpanded: true,
                             value: _selectedStatus,
-                            decoration: _dropdownDecoration(),
+                            decoration: _dropdownDecoration(inputFill),
                             items: const [
                               DropdownMenuItem(value: 'all', child: Text('All Status')),
                               DropdownMenuItem(value: 'enrolled', child: Text('Enrolled')),
@@ -120,25 +119,21 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
                   ],
                 ),
               ),
-
-              // Summary Stats
               Container(
-                color: Colors.white,
+                color: bgColor,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(
                   children: [
-                    _buildSummaryItem('Total Students', '$total', Colors.blue),
-                    _buildSummaryItem('Active', '$active', Colors.green),
-                    _buildSummaryItem('Completed', '$completed', Colors.purple),
+                    _buildSummaryItem('Total Students', '$total', Colors.blue, fadedText!),
+                    _buildSummaryItem('Active', '$active', Colors.green, fadedText),
+                    _buildSummaryItem('Completed', '$completed', Colors.purple, fadedText),
                   ],
                 ),
               ),
-
-              // Student Cards List
               Expanded(
                 child: isLoading
                     ? const Center(child: CircularProgressIndicator())
-                    : filteredStudents.isEmpty
+                    : filtered.isEmpty
                     ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -147,24 +142,21 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
                       const SizedBox(height: 16),
                       Text(
                         'No matching student found.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 16, color: fadedText),
                       ),
                     ],
                   ),
                 )
                     : ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  itemCount: filteredStudents.length,
+                  itemCount: filtered.length,
                   itemBuilder: (context, index) {
-                    final student = filteredStudents[index];
+                    final student = filtered[index];
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 16),
                       child: StudentProgressCard(
                         student: student,
-                        onTap: () {
-                          // Optional: Show more student detail
-                        },
+                        onTap: () {},
                       ),
                     );
                   },
@@ -177,24 +169,24 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
     );
   }
 
-  InputDecoration _dropdownDecoration() {
+  InputDecoration _dropdownDecoration(Color fillColor) {
     return InputDecoration(
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
         borderSide: BorderSide.none,
       ),
       filled: true,
-      fillColor: Colors.grey[100],
+      fillColor: fillColor,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     );
   }
 
-  Widget _buildSummaryItem(String label, String value, Color color) {
+  Widget _buildSummaryItem(String label, String value, Color color, Color fadedColor) {
     return Expanded(
       child: Column(
         children: [
           Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
-          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+          Text(label, style: TextStyle(fontSize: 12, color: fadedColor)),
         ],
       ),
     );

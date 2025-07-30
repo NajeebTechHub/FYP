@@ -28,9 +28,15 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
       provider.fetchAnnouncements();
     });
   }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDark ? AppColors.darkBackground : AppColors.white;
+    final chipColor = isDark ? AppColors.cardDark : Colors.white;
+
     return Scaffold(
+      backgroundColor: backgroundColor,
       body: Consumer<TeacherProvider>(
         builder: (context, teacherProvider, child) {
           final isLoading = !teacherProvider.areAnnouncementsLoaded || !teacherProvider.areCoursesLoaded;
@@ -38,6 +44,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
           if (isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
+
           return Column(
             children: [
               Align(
@@ -50,7 +57,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
               if (_selectedCourse != 'all' || _selectedType != 'all')
                 Container(
                   padding: const EdgeInsets.all(16),
-                  color: Colors.white,
+                  color: chipColor,
                   child: Row(
                     children: [
                       const Text('Filters: '),
@@ -72,21 +79,16 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                     ],
                   ),
                 ),
-              Expanded(
-                child: _buildAnnouncementsList(teacherProvider),
-              ),
+              Expanded(child: _buildAnnouncementsList(teacherProvider)),
             ],
           );
         },
-
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => const CreateAnnouncementScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const CreateAnnouncementScreen()),
           );
         },
         backgroundColor: AppColors.primary,
@@ -96,8 +98,9 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
     );
   }
 
-  Widget _buildAnnouncementsList(TeacherProvider teacherProvider) {
-    List<TeacherAnnouncement> filtered = teacherProvider.announcements;
+  Widget _buildAnnouncementsList(TeacherProvider provider) {
+    List<TeacherAnnouncement> filtered = provider.announcements;
+
     if (_selectedCourse != 'all') {
       filtered = filtered.where((a) => a.courseId == _selectedCourse).toList();
     }
@@ -112,11 +115,13 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
           children: [
             Icon(Icons.campaign_outlined, size: 64, color: Colors.grey[400]),
             const SizedBox(height: 16),
-            Text('No announcements found',
-                style: TextStyle(fontSize: 18, color: Colors.grey[600], fontWeight: FontWeight.w500)),
+            Text('No announcements found', style: TextStyle(fontSize: 18, color: Colors.grey[600], fontWeight: FontWeight.w500)),
             const SizedBox(height: 8),
-            Text('Create your first announcement to communicate with students',
-                style: TextStyle(fontSize: 14, color: Colors.grey[500]), textAlign: TextAlign.center),
+            Text(
+              'Create your first announcement to communicate with students',
+              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       );
@@ -132,8 +137,8 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
           child: AnnouncementCard(
             announcement: announcement,
             onEdit: () => showEditAnnouncementDialog(context, announcement),
-            onDelete: () => _showDeleteConfirmation(context, announcement, teacherProvider),
-            onTogglePublish: () => teacherProvider.toggleAnnouncementPublish(announcement.id),
+            onDelete: () => _showDeleteConfirmation(context, announcement, provider),
+            onTogglePublish: () => provider.toggleAnnouncementPublish(announcement.id),
           ),
         );
       },
@@ -185,62 +190,40 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
     );
   }
 
-  Future<void> showEditAnnouncementDialog(
-      BuildContext context,
-      TeacherAnnouncement announcement,
-      ) async {
+  Future<void> showEditAnnouncementDialog(BuildContext context, TeacherAnnouncement announcement) async {
     final titleController = TextEditingController(text: announcement.title);
     final contentController = TextEditingController(text: announcement.content);
 
     await showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Edit Announcement'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(labelText: 'Title'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: contentController,
-                maxLines: 3,
-                decoration: const InputDecoration(labelText: 'Content'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                await FirebaseFirestore.instance
-                    .collection('announcements')
-                    .doc(announcement.id)
-                    .update({
-                  'title': titleController.text,
-                  'content': contentController.text,
-                });
-                Navigator.pop(context);
-              },
-              child: const Text('Save'),
-            ),
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Announcement'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: titleController, decoration: const InputDecoration(labelText: 'Title')),
+            const SizedBox(height: 12),
+            TextField(controller: contentController, maxLines: 3, decoration: const InputDecoration(labelText: 'Content')),
           ],
-        );
-      },
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              await FirebaseFirestore.instance.collection('announcements').doc(announcement.id).update({
+                'title': titleController.text,
+                'content': contentController.text,
+              });
+              Navigator.pop(context);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
     );
   }
 
-  void _showDeleteConfirmation(
-      BuildContext context,
-      TeacherAnnouncement announcement,
-      TeacherProvider provider,
-      ) {
+  void _showDeleteConfirmation(BuildContext context, TeacherAnnouncement announcement, TeacherProvider provider) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -252,9 +235,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
             onPressed: () {
               provider.deleteAnnouncement(announcement.id);
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Announcement deleted')),
-              );
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Announcement deleted')));
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Delete'),

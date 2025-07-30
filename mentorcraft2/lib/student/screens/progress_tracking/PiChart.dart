@@ -1,9 +1,6 @@
 import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter_heatmap_calendar/flutter_heatmap_calendar.dart';
-import '../../../theme/color.dart';
 import '../../models/course_progress.dart';
 
 class CategoryPieChartSection extends StatelessWidget {
@@ -13,7 +10,11 @@ class CategoryPieChartSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Card(
+      color: colorScheme.surface,
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
@@ -23,12 +24,11 @@ class CategoryPieChartSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Courses by Category',
-              style: TextStyle(
-                fontSize: 18,
+              style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+                color: colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 16),
@@ -48,7 +48,7 @@ class CategoryPieChartSection extends StatelessWidget {
                   ),
                   Expanded(
                     flex: 2,
-                    child: _buildPieChartLegend(courseProgress),
+                    child: _buildPieChartLegend(context, courseProgress),
                   ),
                 ],
               ),
@@ -93,8 +93,9 @@ class CategoryPieChartSection extends StatelessWidget {
     }).toList();
   }
 
-  Widget _buildPieChartLegend(List<CourseProgress> data) {
+  Widget _buildPieChartLegend(BuildContext context, List<CourseProgress> data) {
     final categoryCount = <String, int>{};
+    final colorScheme = Theme.of(context).colorScheme;
 
     for (final course in data) {
       final category = course.courseName.trim().isNotEmpty ? course.courseName.trim() : 'Uncategorized';
@@ -123,18 +124,18 @@ class CategoryPieChartSection extends StatelessWidget {
               Expanded(
                 child: Text(
                   entry.key,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: AppColors.textPrimary,
+                    color: colorScheme.onSurface,
                   ),
                 ),
               ),
               Text(
                 entry.value.toString(),
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
-                  color: AppColors.textPrimary,
+                  color: colorScheme.onSurface,
                 ),
               ),
             ],

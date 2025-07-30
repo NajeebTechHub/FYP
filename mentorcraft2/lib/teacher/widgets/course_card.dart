@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mentorcraft2/student/models/course.dart';
-import '../models/teacher_course.dart';
 import '../../theme/color.dart';
+import '../models/teacher_course.dart';
 import '../screens/course_detail_screen.dart';
 
 class TeacherCourseCard extends StatelessWidget {
@@ -20,20 +19,28 @@ class TeacherCourseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final cardColor = isDark ? AppColors.cardDark : Colors.white;
+    final titleColor = isDark ? AppColors.textLight : AppColors.textPrimary;
+    final textColor = isDark ? AppColors.textFaded : Colors.grey[700];
+    final subTextColor = isDark ? AppColors.textFaded : Colors.grey[500];
+    final borderColor = isDark ? Colors.white24 : Colors.blue;
+
     return InkWell(
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => CourseModulesScreen(course: course),
-          ),
+          MaterialPageRoute(builder: (_) => CourseModulesScreen(course: course)),
         );
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardColor,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
+          boxShadow: isDark
+              ? []
+              : [
             BoxShadow(
               color: Colors.grey.withOpacity(0.1),
               spreadRadius: 1,
@@ -45,7 +52,6 @@ class TeacherCourseCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Course Image and Status
             Stack(
               children: [
                 ClipRRect(
@@ -59,14 +65,14 @@ class TeacherCourseCard extends StatelessWidget {
                     errorBuilder: (context, error, stackTrace) => Container(
                       height: 120,
                       color: Colors.blue.withOpacity(0.1),
-                      child: Icon(Icons.broken_image, size: 48, color: Colors.blue),
+                      child: const Icon(Icons.broken_image, size: 48, color: Colors.blue),
                     ),
                   )
                       : Container(
                     height: 120,
                     width: double.infinity,
                     color: Colors.blue.withOpacity(0.1),
-                    child: Icon(Icons.play_circle_outline, size: 48, color: Colors.blue),
+                    child: const Icon(Icons.play_circle_outline, size: 48, color: Colors.blue),
                   ),
                 ),
                 Positioned(
@@ -90,8 +96,6 @@ class TeacherCourseCard extends StatelessWidget {
                 ),
               ],
             ),
-
-            // Course Details
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -99,10 +103,10 @@ class TeacherCourseCard extends StatelessWidget {
                 children: [
                   Text(
                     course.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: titleColor,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -110,47 +114,35 @@ class TeacherCourseCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     course.description,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 14, color: textColor),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 12),
-
-                  // Course Meta Information
                   Wrap(
                     spacing: 16,
                     runSpacing: 8,
                     children: [
-                      _buildMetaItem(Icons.category, course.category),
-                      _buildMetaItem(Icons.signal_cellular_alt, course.level),
-                      _buildMetaItem(Icons.access_time, course.duration),
-                      _buildMetaItem(Icons.attach_money, '\$${course.price.toStringAsFixed(0)}'),
+                      _buildMetaItem(Icons.category, course.category, textColor!),
+                      _buildMetaItem(Icons.signal_cellular_alt, course.level, textColor),
+                      _buildMetaItem(Icons.access_time, course.duration, textColor),
+                      _buildMetaItem(Icons.attach_money, '\$${course.price.toStringAsFixed(0)}', textColor),
                     ],
                   ),
                   const SizedBox(height: 12),
-
-                  // Stats Row
                   Row(
                     children: [
-                      _buildStatItem(Icons.people, course.enrolledStudents.toString()),
+                      _buildStatItem(Icons.people, course.enrolledStudents.toString(), subTextColor!),
                       const SizedBox(width: 16),
-                      _buildStatItem(Icons.star, '${course.rating.toStringAsFixed(1)} (${course.totalRating})'),
+                      _buildStatItem(Icons.star, '${course.rating.toStringAsFixed(1)} (${course.totalRating})', subTextColor),
                       const Spacer(),
                       Text(
                         'Updated ${_formatDate(course.updatedAt)}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[500],
-                        ),
+                        style: TextStyle(fontSize: 12, color: subTextColor),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-
-                  // Action Buttons
                   Row(
                     children: [
                       Expanded(
@@ -160,7 +152,7 @@ class TeacherCourseCard extends StatelessWidget {
                           label: const Text('Edit'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.blue,
-                            side: BorderSide(color: Colors.blue),
+                            side: BorderSide(color: borderColor),
                           ),
                         ),
                       ),
@@ -172,21 +164,31 @@ class TeacherCourseCard extends StatelessWidget {
                             course.isPublished ? Icons.unpublished : Icons.publish,
                             size: 16,
                           ),
-                          label: Text(course.isPublished ? 'Unpublish' : 'Publish', style: TextStyle(fontSize: 13)),
+                          label: Text(
+                            course.isPublished ? 'Unpublish' : 'Publish',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            softWrap: false,
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: course.isPublished ? Colors.orange : Colors.green,
                             foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30), // makes it pill-like
+                            ),
                           ),
                         ),
                       ),
                       const SizedBox(width: 5),
-                      Container(
+                      SizedBox(
                         width: 33,
                         child: IconButton(
                           onPressed: onDelete,
                           icon: const Icon(Icons.delete),
                           color: Colors.red,
-                          tooltip: 'Delete Course',
                         ),
                       ),
                     ],
@@ -200,51 +202,33 @@ class TeacherCourseCard extends StatelessWidget {
     );
   }
 
-  Widget _buildMetaItem(IconData icon, String text) {
+  Widget _buildMetaItem(IconData icon, String text, Color color) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: Colors.grey[600]),
+        Icon(icon, size: 14, color: color),
         const SizedBox(width: 4),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
+        Text(text, style: TextStyle(fontSize: 12, color: color)),
       ],
     );
   }
 
-  Widget _buildStatItem(IconData icon, String text) {
+  Widget _buildStatItem(IconData icon, String text, Color color) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: Colors.grey[600]),
+        Icon(icon, size: 14, color: color),
         const SizedBox(width: 4),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+        Text(text, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w500)),
       ],
     );
   }
 
   String _formatDate(DateTime date) {
     final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else {
-      return 'Just now';
-    }
+    final diff = now.difference(date);
+    if (diff.inDays > 0) return '${diff.inDays}d ago';
+    if (diff.inHours > 0) return '${diff.inHours}h ago';
+    return 'Just now';
   }
 }
