@@ -39,7 +39,6 @@ class SimpleAuthProvider extends ChangeNotifier {
     }
   }
 
-  /// ✅ Public method to manually restore session (used in `main.dart`)
   Future<void> restoreSession() async {
     final currentUser = _auth.currentUser;
     if (currentUser != null) {
@@ -79,7 +78,7 @@ class SimpleAuthProvider extends ChangeNotifier {
 
       await credential.user!.updateDisplayName(displayName);
 
-      await saveSelectedRole(role); // 🔐 Save role
+      await saveSelectedRole(role);
 
       final appUser = AppUser(
         id: credential.user!.uid,
@@ -114,7 +113,7 @@ class SimpleAuthProvider extends ChangeNotifier {
       );
 
       final role = await getSavedRole();
-      await saveSelectedRole(role); // ✅ Fix: Save role again after login
+      await saveSelectedRole(role);
 
       final appUser = AppUser(
         id: credential.user!.uid,

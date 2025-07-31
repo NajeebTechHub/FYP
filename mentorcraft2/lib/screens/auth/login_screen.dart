@@ -42,7 +42,6 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               const SizedBox(height: 48),
               _buildHeader(),
-              // const SizedBox(height: 48),
               _roleSelection(),
               _buildLoginForm(),
               const SizedBox(height: 24),
@@ -85,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
           'Sign in to continue your learning journey',
           style: TextStyle(
             fontSize: 16,
-            color: Colors.grey[600],
+            color: Colors.grey,
           ),
           textAlign: TextAlign.center,
         ),
@@ -93,14 +92,19 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _roleSelection(){
+  Widget _roleSelection() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text('choose your role'),
-        TextButton(onPressed: (){
-          Navigator.of(context).push(MaterialPageRoute(builder: (context) => RoleSelectionScreen()));
-        }, child: Text('click'))
+        const Text('Choose your role'),
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).push(MaterialPageRoute(
+              builder: (context) => RoleSelectionScreen(),
+            ));
+          },
+          child: const Text('Click'),
+        )
       ],
     );
   }
@@ -255,7 +259,9 @@ class _LoginScreenState extends State<LoginScreen> {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => RegisterScreen(selectedRole: widget.selectedRole,)),
+              MaterialPageRoute(
+                builder: (context) => RegisterScreen(selectedRole: widget.selectedRole),
+              ),
             );
           },
           child: const Text(
@@ -287,10 +293,19 @@ class _LoginScreenState extends State<LoginScreen> {
         _isLoading = false;
       });
 
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Login successful! ${_emailController.text}'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+            ),
+          );
 
-      if (success) {
-        if (mounted) {
-          // Manually navigate to respective main screen based on selected role
+          await Future.delayed(const Duration(seconds: 1));
+
           switch (widget.selectedRole) {
             case UserRole.teacher:
               Navigator.of(context).pushReplacement(
@@ -304,13 +319,20 @@ class _LoginScreenState extends State<LoginScreen> {
               break;
             case UserRole.admin:
               Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => const TeacherMainScreen()), // or AdminMainScreen if you have it
+                MaterialPageRoute(builder: (_) => const TeacherMainScreen()), // or AdminMainScreen
               );
               break;
           }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(authProvider.errorMessage ?? 'Login failed'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         }
       }
-
     }
   }
 
@@ -342,7 +364,6 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
 
-      // ✅ Show dialog if successful
       if (success) {
         showDialog(
           context: context,
@@ -360,6 +381,4 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
   }
-
 }
-

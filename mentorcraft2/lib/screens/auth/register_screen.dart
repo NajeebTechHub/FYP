@@ -32,7 +32,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -89,7 +88,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           'Create your account and start learning',
           style: TextStyle(
             fontSize: 16,
-            color: Colors.grey[600],
+            color: Colors.grey,
           ),
           textAlign: TextAlign.center,
         ),
@@ -342,8 +341,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (success) {
         if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Account created successfully! Please sign in.'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 2),
+            ),
+          );
+
+          await Future.delayed(const Duration(seconds: 2));
+
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => LoginScreen(selectedRole: widget.selectedRole)),
+            MaterialPageRoute(
+              builder: (_) => LoginScreen(selectedRole: widget.selectedRole),
+            ),
           );
         }
       } else {
