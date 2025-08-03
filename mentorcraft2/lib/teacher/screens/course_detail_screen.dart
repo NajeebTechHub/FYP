@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:mentorcraft2/theme/color.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../models/teacher_course.dart';
 
@@ -100,6 +101,8 @@ class _CourseModulesScreenState extends State<CourseModulesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.course.title),
+        backgroundColor: AppColors.darkBlue,
+        foregroundColor: AppColors.white,
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -126,22 +129,41 @@ class _CourseModulesScreenState extends State<CourseModulesScreen> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton.icon(
-                      icon: const Icon(Icons.edit),
-                      label: const Text("Edit"),
+                      icon: const Icon(Icons.edit, size: 16),
+                      label: const Text(
+                        "Edit",
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        visualDensity: VisualDensity.compact,
+                      ),
                       onPressed: () => _showEditModuleSheet(context, module),
                     ),
                     TextButton.icon(
-                      icon: const Icon(Icons.delete),
-                      label: const Text("Delete"),
+                      icon: const Icon(Icons.delete, size: 16),
+                      label: const Text(
+                        "Delete",
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        visualDensity: VisualDensity.compact,
+                      ),
                       onPressed: () async {
                         final confirm = await showDialog<bool>(
                           context: context,
                           builder: (_) => AlertDialog(
                             title: const Text('Confirm Delete'),
-                            content: const Text('Are you sure you want to delete this module? All its lessons will be removed.'),
+                            content: const Text(
+                                'Are you sure you want to delete this module? All its lessons will be removed.'),
                             actions: [
-                              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                              TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
+                              TextButton(
+                                  onPressed: () => Navigator.pop(context, false),
+                                  child: const Text('Cancel')),
+                              TextButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: const Text('Delete')),
                             ],
                           ),
                         );
@@ -150,15 +172,22 @@ class _CourseModulesScreenState extends State<CourseModulesScreen> {
                           await modulesRef.doc(module.id).delete();
                         }
                       },
-
                     ),
                     TextButton.icon(
-                      icon: const Icon(Icons.add),
-                      label: const Text("Add Lesson"),
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text(
+                        "Add Lesson",
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        visualDensity: VisualDensity.compact,
+                      ),
                       onPressed: () => _showAddLessonSheet(context, module),
                     ),
                   ],
                 ),
+
               ],
             ),
           );

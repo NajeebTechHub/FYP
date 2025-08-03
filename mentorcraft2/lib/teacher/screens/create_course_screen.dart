@@ -170,8 +170,8 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
       backgroundColor: backgroundColor,
       appBar: AppBar(
         title: const Text('Create New Course'),
-        foregroundColor: labelColor,
-        backgroundColor: backgroundColor,
+        foregroundColor: AppColors.white,
+        backgroundColor: AppColors.darkBlue,
         elevation: 0,
       ),
       body: Form(
@@ -269,13 +269,15 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
   }
 
   Widget _buildImagePicker() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: _pickImage,
       child: Container(
         height: 180,
         width: double.infinity,
         decoration: BoxDecoration(
-          color: AppColors.cardDark,
+          color: isDark ? AppColors.cardDark : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: AppColors.darkBlue.withOpacity(0.2),
@@ -292,16 +294,20 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
           ),
         )
             : Center(
-          child: Icon(
-            Icons.image,
-            color: Theme.of(context).brightness == Brightness.dark
-                ? Colors.white38
-                : Colors.black38,
-            size: 40,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.image,
+                color: isDark ? Colors.white38 : Colors.black38,
+                size: 40,
+              ),
+              Text('pick thumbnail',style: TextStyle(color: isDark ? Colors.white38 : Colors.grey,),)
+            ],
           ),
         ),
-      )
-
+      ),
     );
   }
+
 }

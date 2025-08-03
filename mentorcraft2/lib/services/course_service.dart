@@ -9,7 +9,7 @@ class CourseService {
     try {
       final courseQuery = await _firestore
           .collection('courses')
-          .where('teacherId', isEqualTo: teacherId)
+          .where( 'teacherId',isEqualTo: teacherId)
           .get();
 
       List<TeacherCourse> courses = [];

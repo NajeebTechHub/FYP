@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:mentorcraft2/theme/color.dart';
 import '../models/teacher_quiz.dart';
 
 class QuizSubmissionsScreen extends StatefulWidget {
@@ -69,7 +70,8 @@ class _QuizSubmissionsScreenState extends State<QuizSubmissionsScreen> {
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: Text('${widget.quiz.title} - Submissions'),
-        foregroundColor: Colors.black87,
+        backgroundColor: AppColors.darkBlue,
+        foregroundColor: AppColors.white,
         elevation: 0,
         actions: [
           IconButton(

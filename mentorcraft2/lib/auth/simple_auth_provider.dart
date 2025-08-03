@@ -189,8 +189,6 @@ class SimpleAuthProvider extends ChangeNotifier {
     return UserRole.student;
   }
 
-
-
   void _setUser(AppUser? user) {
     _user = user;
     notifyListeners();
