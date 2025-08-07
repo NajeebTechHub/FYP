@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:mentorcraft2/teacher/provider/teacher_provider.dart';
 import '../models/teacher_announcement.dart';
 import '../../theme/color.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // 🔸 Firestore import
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CreateAnnouncementScreen extends StatefulWidget {
   const CreateAnnouncementScreen({Key? key}) : super(key: key);
@@ -24,6 +24,30 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
 
   final List<String> _types = ['general', 'assignment', 'reminder', 'announcement'];
 
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final provider = Provider.of<TeacherProvider>(context, listen: false);
+      if (!provider.isInitialized) {
+        await provider.initializeData();
+      }
+      if (provider.courses.isEmpty) {
+        await provider.fetchCourses();
+      }
+
+      if (provider.courses.isNotEmpty) {
+        setState(() {
+          _selectedCourse = provider.courses.first.id;
+        });
+      }
+
+      setState(() => _isLoading = false);
+    });
+  }
+
   @override
   void dispose() {
     _titleController.dispose();
@@ -36,15 +60,14 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create Announcement'),
-        foregroundColor: Colors.black87,
+        backgroundColor: AppColors.darkBlue,
+        foregroundColor: AppColors.white,
         elevation: 0,
       ),
-      body: Consumer<TeacherProvider>(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Consumer<TeacherProvider>(
         builder: (context, teacherProvider, child) {
-          if (_selectedCourse.isEmpty && teacherProvider.courses.isNotEmpty) {
-            _selectedCourse = teacherProvider.courses.first.id;
-          }
-
           return Form(
             key: _formKey,
             child: SingleChildScrollView(
@@ -137,33 +160,19 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Options',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+                          const Text('Options', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
                           const SizedBox(height: 12),
                           SwitchListTile(
                             title: const Text('Mark as Urgent'),
                             subtitle: const Text('This will highlight the announcement'),
                             value: _isUrgent,
-                            onChanged: (value) {
-                              setState(() {
-                                _isUrgent = value;
-                              });
-                            },
+                            onChanged: (value) => setState(() => _isUrgent = value),
                           ),
                           SwitchListTile(
                             title: const Text('Publish Immediately'),
                             subtitle: const Text('Students will see this right away'),
                             value: _publishImmediately,
-                            onChanged: (value) {
-                              setState(() {
-                                _publishImmediately = value;
-                              });
-                            },
+                            onChanged: (value) => setState(() => _publishImmediately = value),
                           ),
                         ],
                       ),
@@ -173,21 +182,18 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
 
                   Row(
                     children: [
-                      if (!_publishImmediately) ...[
+                      if (!_publishImmediately)
                         Expanded(
                           child: OutlinedButton(
                             onPressed: _saveDraft,
                             child: const Text('Save as Draft'),
                           ),
                         ),
-                        const SizedBox(width: 16),
-                      ],
+                      if (!_publishImmediately) const SizedBox(width: 16),
                       Expanded(
                         child: ElevatedButton(
                           onPressed: _createAnnouncement,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                          ),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
                           child: Text(_publishImmediately ? 'Publish' : 'Create'),
                         ),
                       ),
@@ -216,9 +222,7 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
 
   Future<void> _createAnnouncementWithStatus(bool isPublished) async {
     final teacherProvider = Provider.of<TeacherProvider>(context, listen: false);
-    final selectedCourse = teacherProvider.courses.firstWhere(
-          (course) => course.id == _selectedCourse,
-    );
+    final selectedCourse = teacherProvider.courses.firstWhere((course) => course.id == _selectedCourse);
 
     final announcement = TeacherAnnouncement(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -237,28 +241,10 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
       type: _selectedType,
     );
 
-    // Save to provider
     teacherProvider.addAnnouncement(announcement);
 
     try {
-      // 🔥 Save to Firestore
-      await FirebaseFirestore.instance.collection('announcements').doc(announcement.id).set({
-        'id': announcement.id,
-        'title': announcement.title,
-        'content': announcement.content,
-        'courseId': announcement.courseId,
-        'courseName': announcement.courseName,
-        'teacherId': announcement.teacherId,
-        'teacherName': announcement.teacherName,
-        'createdAt': announcement.createdAt.toIso8601String(),
-        'updatedAt': announcement.updatedAt.toIso8601String(),
-        'isUrgent': announcement.isUrgent,
-        'isPublished': announcement.isPublished,
-        'targetStudents': announcement.targetStudents,
-        'readCount': announcement.readCount,
-        'type': announcement.type,
-      });
-
+      await FirebaseFirestore.instance.collection('announcements').doc(announcement.id).set(announcement.toMap());
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

@@ -13,7 +13,12 @@ class QuizScreen extends StatelessWidget {
     final textColor = isDark ? AppColors.textLight : AppColors.textPrimary;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Quizzes & Assessments')),
+      appBar: AppBar(
+        title: const Text('Quizzes & Assessments',style: TextStyle(fontWeight: FontWeight.bold),),
+        backgroundColor: AppColors.darkBlue,
+        foregroundColor: AppColors.white,
+        centerTitle: true,
+      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('quizzes')

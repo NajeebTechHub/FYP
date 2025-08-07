@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:mentorcraft2/core/models/user_role.dart';
 import 'package:mentorcraft2/screens/help&support.dart';
 import 'package:mentorcraft2/student/screens/certificate/certificate_screen.dart';
-import 'package:mentorcraft2/student/screens/forum_screen.dart';
+import 'package:mentorcraft2/student/screens/discussion_forum/forum_screen.dart';
 import 'package:mentorcraft2/student/screens/learning_history_screen.dart';
 import 'package:mentorcraft2/student/screens/payment_history_screen.dart';
-import 'package:mentorcraft2/student/screens/progress_tracking_screen.dart';
+import 'package:mentorcraft2/student/screens/progress_tracking/progress_tracking_screen.dart';
 import 'package:mentorcraft2/student/screens/quiz_screen.dart';
 import 'package:mentorcraft2/screens/settings_screen.dart';
 import 'package:mentorcraft2/theme/color.dart';
@@ -15,6 +15,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 import '../../../auth/simple_auth_provider.dart';
 import '../../../screens/about_mentorcraft.dart';
 import '../../../screens/auth/login_screen.dart';
+import '../../screens/annoucement_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   final int currentIndex;
@@ -28,7 +29,9 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = Theme
+        .of(context)
+        .brightness == Brightness.dark;
     final bgColor = isDark ? AppColors.darkBackground : Colors.white;
 
     return Drawer(
@@ -65,34 +68,52 @@ class AppDrawer extends StatelessWidget {
 
   Widget _buildDrawerHeader(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    final String displayName = user?.displayName ?? 'No Name';
-    final String email = user?.email ?? 'No Email';
-    final String uid = user?.uid ?? '';
+
+    if (user == null || user.uid.isEmpty) {
+      return const UserAccountsDrawerHeader(
+        accountName: Text("Guest"),
+        accountEmail: Text("Not Logged In"),
+        currentAccountPicture: CircleAvatar(
+          backgroundColor: Colors.white,
+          child: Icon(Icons.person, size: 40, color: AppColors.darkBlue),
+        ),
+        decoration: BoxDecoration(color: AppColors.darkBlue),
+      );
+    }
+
+    final String displayName = user.displayName ?? 'No Name';
+    final String email = user.email ?? 'No Email';
+    final String uid = user.uid;
+
     final String imageUrl =
         'https://tqzoozpckrmmprwnhweg.supabase.co/storage/v1/object/public/profile-images/public/$uid.jpg';
+
+    final bool isValidUrl = Uri.tryParse(imageUrl)?.hasAbsolutePath ?? false;
 
     return UserAccountsDrawerHeader(
       accountName: Text(displayName, style: const TextStyle(fontSize: 18)),
       accountEmail: Text(email, style: const TextStyle(fontSize: 14)),
       currentAccountPicture: CircleAvatar(
         backgroundColor: Colors.white,
+        radius: 30,
         child: ClipOval(
-          child: Image.network(
+          child: (isValidUrl)
+              ? Image.network(
             imageUrl,
+            width: 70,
+            height: 70,
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
-              return Container(
-                color: AppColors.lightBlue.withOpacity(0.2),
-                child: const Icon(Icons.person, size: 50, color: AppColors.darkBlue),
-              );
+              return _buildFallbackAvatar();
             },
-          ),
+          )
+              : _buildFallbackAvatar(),
         ),
       ),
       decoration: BoxDecoration(
         color: AppColors.darkBlue,
         image: DecorationImage(
-          image: const AssetImage('assets/images/image_1742380932561.png'),
+          image: const AssetImage('assets/placeholder.jpg'),
           fit: BoxFit.cover,
           colorFilter: ColorFilter.mode(
             AppColors.darkBlue.withOpacity(0.85),
@@ -100,6 +121,26 @@ class AppDrawer extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+
+  Widget _buildFallbackAvatar() {
+    return Container(
+      width: 60,
+      height: 60,
+      color: AppColors.lightBlue.withOpacity(0.2),
+      child: const Icon(Icons.person, size: 40, color: AppColors.darkBlue),
+    );
+  }
+}
+
+  Widget _buildFallbackAvatar() {
+    return Container(
+      width: 60,
+      height: 60,
+      color: AppColors.lightBlue.withOpacity(0.2),
+      child: const Icon(Icons.person, size: 40, color: AppColors.darkBlue),
     );
   }
 
@@ -165,6 +206,14 @@ class AppDrawer extends StatelessWidget {
           '/history',
           onTap: () => Navigator.push(
               context, MaterialPageRoute(builder: (_) => LearningHistoryScreen())),
+        ),
+        _buildDrawerItem(
+          context,
+          Icons.announcement,
+          'Announcements',
+          '/announcement',
+          onTap: () => Navigator.push(
+              context, MaterialPageRoute(builder: (_) => StudentAnnouncementsScreen())),
         ),
       ],
     );
@@ -285,4 +334,3 @@ class AppDrawer extends StatelessWidget {
       ),
     );
   }
-}

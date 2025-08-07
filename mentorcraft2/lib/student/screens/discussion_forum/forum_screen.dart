@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:mentorcraft2/theme/color.dart';
-import '../models/discussion_topic.dart';
+import '../../models/discussion_topic.dart';
 import 'Add_new_post.dart';
 import 'discussion_details_screen.dart';
 import 'edit_post.dart';
@@ -36,9 +36,9 @@ class _ForumsScreenState extends State<ForumsScreen> {
     return Scaffold(
       backgroundColor: theme.colorScheme.background,
       appBar: AppBar(
-        title: const Text('Discussion Forums'),
+        title: const Text('Discussion Forums',style: TextStyle(fontWeight: FontWeight.bold),),
         backgroundColor: AppColors.darkBlue,
-        foregroundColor: theme.textTheme.titleLarge!.color,
+        foregroundColor: AppColors.white,
         elevation: 0,
         centerTitle: true,
       ),
@@ -129,15 +129,13 @@ class _ForumsScreenState extends State<ForumsScreen> {
       onChanged: (value) => setState(() => searchQuery = value),
       style: theme.textTheme.bodyMedium,
       decoration: InputDecoration(
-        hintText: 'Search discussions...'
-        ,
+        hintText: 'Search discussions...',
         hintStyle: theme.textTheme.bodySmall,
         prefixIcon: const Icon(Icons.search),
         filled: true,
         fillColor: theme.cardColor,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide.none,
         ),
       ),
     );

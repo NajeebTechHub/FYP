@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+import '../../../theme/color.dart';
+
 class DiscussionDetailScreen extends StatefulWidget {
   final String docId;
   final String title;
@@ -133,7 +135,12 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
+      appBar: AppBar(
+        title: Text(widget.title,style: TextStyle(fontWeight: FontWeight.bold),),
+        backgroundColor: AppColors.darkBlue,
+        foregroundColor: AppColors.white,
+        centerTitle: true,
+      ),
       body: Column(
         children: [
           Expanded(

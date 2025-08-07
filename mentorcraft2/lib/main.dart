@@ -41,13 +41,15 @@ class MentorCraftApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
-    return MaterialApp(
-      title: 'MentorCraft',
-      debugShowCheckedModeBanner: false,
-      themeMode: themeProvider.themeMode,
-      darkTheme: AppTheme.darkTheme,
-      theme: AppTheme.lightTheme,
-      home: const AuthenticationWrapper(),
+    return SafeArea(
+      child: MaterialApp(
+        title: 'MentorCraft',
+        debugShowCheckedModeBanner: false,
+        themeMode: themeProvider.themeMode,
+        darkTheme: AppTheme.darkTheme,
+        theme: AppTheme.lightTheme,
+        home: const AuthenticationWrapper(),
+      ),
     );
   }
 }

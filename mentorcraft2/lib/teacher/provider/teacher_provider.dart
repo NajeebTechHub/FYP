@@ -1,9 +1,7 @@
-// All your imports (no change)
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../models/app_user.dart';
 import '../../services/course_service.dart';
 import '../../services/progress_service.dart';
@@ -173,16 +171,46 @@ class TeacherProvider with ChangeNotifier {
 
   Future<void> fetchCourses([String? teacherId]) async {
     _isCoursesLoading = true;
+    _areCoursesLoaded = false;
     _safeNotifyListeners();
     try {
       _courses = await _courseService.getCoursesByTeacher(teacherId ?? _teacherId);
     } catch (e) {
-      debugPrint("Error fetching courses: $e");
     } finally {
       _isCoursesLoading = false;
+      _areCoursesLoaded = true;
       _safeNotifyListeners();
     }
   }
+
+
+  Future<void> fetchAllPublishedAnnouncements() async {
+    try {
+      _areAnnouncementsLoaded = false;
+      notifyListeners();
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection('announcements')
+          .where('isPublished', isEqualTo: true)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      _announcements = snapshot.docs
+          .map((doc) => TeacherAnnouncement.fromMap(doc.data(), doc.id))
+          .toList();
+
+      print(_announcements);
+
+      _areAnnouncementsLoaded = true;
+      notifyListeners();
+    } catch (e) {
+      print('Error fetching all published announcements: $e');
+      _areAnnouncementsLoaded = true;
+      notifyListeners();
+    }
+  }
+
+
 
   void subscribeToCourses(String teacherId) {
     _isCoursesLoading = true;

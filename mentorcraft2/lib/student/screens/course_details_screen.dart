@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:flutter/services.dart';
+import '../../theme/color.dart';
 import '../models/course.dart';
 import '../models/certificate.dart';
 import 'certificate/certificate_detail_bottom_sheet.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 class CourseDetailsScreen extends StatefulWidget {
   final Course course;
+  final bool isFromMyCourses; // NEW FLAG
 
-  const CourseDetailsScreen({Key? key, required this.course}) : super(key: key);
+  const CourseDetailsScreen({
+    Key? key,
+    required this.course,
+    this.isFromMyCourses = false, // Default to false (Explore)
+  }) : super(key: key);
 
   @override
   State<CourseDetailsScreen> createState() => _CourseDetailsScreenState();
@@ -49,7 +56,8 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
     }
   }
 
-  Future<List<Map<String, dynamic>>> fetchModulesWithLessons(String courseId) async {
+  Future<List<Map<String, dynamic>>> fetchModulesWithLessons(
+      String courseId) async {
     final modulesSnapshot = await FirebaseFirestore.instance
         .collection('courses')
         .doc(courseId)
@@ -60,7 +68,10 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
     List<Map<String, dynamic>> modules = [];
 
     for (var moduleDoc in modulesSnapshot.docs) {
-      final lessonsSnapshot = await moduleDoc.reference.collection('lessons').orderBy('order').get();
+      final lessonsSnapshot = await moduleDoc.reference
+          .collection('lessons')
+          .orderBy('order')
+          .get();
       final lessons = lessonsSnapshot.docs.map((doc) {
         return {
           'id': doc.id,
@@ -81,10 +92,12 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final course = widget.course;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(course.title),
+        centerTitle: true,
+        backgroundColor: AppColors.darkBlue,
+        foregroundColor: AppColors.white,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -93,7 +106,8 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
           children: [
             _buildCourseHeader(course),
             const SizedBox(height: 24),
-            const Text('Modules & Lessons', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const Text('Modules & Lessons',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             FutureBuilder<List<Map<String, dynamic>>>(
               future: _modulesFuture,
@@ -122,14 +136,19 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(12),
-          child: (course.imageUrl.isNotEmpty && course.imageUrl.startsWith('http'))
-              ? Image.network(course.imageUrl, width: double.infinity, height: 200, fit: BoxFit.cover)
-              : Image.asset('assets/placeholder.jpg', width: double.infinity, height: 200, fit: BoxFit.cover),
+          child:
+              (course.imageUrl.isNotEmpty && course.imageUrl.startsWith('http'))
+                  ? Image.network(course.imageUrl,
+                      width: double.infinity, height: 200, fit: BoxFit.cover)
+                  : Image.asset('assets/placeholder.jpg',
+                      width: double.infinity, height: 200, fit: BoxFit.cover),
         ),
         const SizedBox(height: 16),
-        Text(course.title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        Text(course.title,
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
-        Text('By ${course.teacherName}', style: const TextStyle(fontSize: 16, color: Colors.grey)),
+        Text('By ${course.teacherName}',
+            style: const TextStyle(fontSize: 16, color: Colors.grey)),
         const SizedBox(height: 16),
         Text(course.description, style: const TextStyle(fontSize: 16)),
         const SizedBox(height: 16),
@@ -145,7 +164,8 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
           ],
         ),
         const SizedBox(height: 16),
-        Text('Price: \$${course.price}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+        Text('Price: \$${course.price}',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
       ],
     );
   }
@@ -163,21 +183,29 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 10),
           elevation: 4,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
               children: [
                 ListTile(
-                  title: Text(module['title'] ?? '', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  title: Text(module['title'] ?? '',
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold)),
                   subtitle: Text(module['description'] ?? ''),
                   trailing: IconButton(
-                    icon: Icon(isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down),
-                    onPressed: () => setState(() => _expandedModules[index] = !isExpanded),
+                    icon: Icon(isExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down),
+                    onPressed: () =>
+                        setState(() => _expandedModules[index] = !isExpanded),
                   ),
                 ),
                 if (isExpanded)
-                  ...lessons.map((lesson) => _buildLessonTile(lesson, modules)).toList(),
+                  ...lessons
+                      .map((lesson) => _buildLessonTile(lesson, modules))
+                      .toList(),
               ],
             ),
           ),
@@ -186,18 +214,37 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
     );
   }
 
-  Widget _buildLessonTile(Map<String, dynamic> lesson, List<Map<String, dynamic>> modules) {
+  String? extractYoutubeVideoId(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return null;
+
+    if (uri.host.contains('youtu.be')) {
+      return uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
+    } else if (uri.host.contains('youtube.com')) {
+      return uri.queryParameters['v'];
+    }
+
+    return null;
+  }
+
+  Widget _buildLessonTile(
+      Map<String, dynamic> lesson, List<Map<String, dynamic>> modules) {
     final videoUrl = lesson['videoUrl'] ?? '';
-    final videoId = YoutubePlayer.convertUrlToId(videoUrl);
+    final videoId = extractYoutubeVideoId(videoUrl); // 🔧 Use custom extractor
     final lessonId = lesson['id'];
     final alreadyCompleted = completedLessons.contains(lessonId);
+
+    print("Extracted video ID: $videoId from URL: $videoUrl");
 
     return Column(
       children: [
         ListTile(
-          leading: Icon(Icons.play_circle_fill, color: alreadyCompleted ? Colors.green : Colors.redAccent, size: 30),
+          leading: Icon(Icons.play_circle_fill,
+              color: alreadyCompleted ? Colors.green : Colors.redAccent,
+              size: 30),
           title: Text(lesson['title'] ?? ''),
-          subtitle: Text('${lesson['duration']} min • ${lesson['type'] ?? 'Video'}'),
+          subtitle:
+              Text('${lesson['duration']} min • ${lesson['type'] ?? 'Video'}'),
           onTap: () {
             if (videoId != null) {
               Navigator.push(
@@ -206,26 +253,34 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                   builder: (_) => YoutubeLessonPlayerScreen(videoId: videoId),
                 ),
               );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Invalid YouTube URL')),
+              );
             }
           },
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: ElevatedButton.icon(
-            onPressed: alreadyCompleted ? null : () => _handleMarkComplete(lessonId, modules),
-            icon: Icon(alreadyCompleted ? Icons.check_circle : Icons.check),
-            label: Text(alreadyCompleted ? 'Completed' : 'Mark as Completed'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: alreadyCompleted ? Colors.green : Colors.blue,
+        if (widget.isFromMyCourses)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: ElevatedButton.icon(
+              onPressed: alreadyCompleted
+                  ? null
+                  : () => _handleMarkComplete(lessonId, modules),
+              icon: Icon(alreadyCompleted ? Icons.check_circle : Icons.check),
+              label: Text(alreadyCompleted ? 'Completed' : 'Mark as Completed'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: alreadyCompleted ? Colors.green : Colors.blue,
+              ),
             ),
           ),
-        ),
         const Divider(),
       ],
     );
   }
 
-  Future<void> _handleMarkComplete(String lessonId, List<Map<String, dynamic>> modules) async {
+  Future<void> _handleMarkComplete(
+      String lessonId, List<Map<String, dynamic>> modules) async {
     final newCompleted = List<String>.from(completedLessons)..add(lessonId);
     final totalLessons = modules.expand((m) => m['lessons'] as List).length;
     final progress = newCompleted.length / totalLessons;
@@ -285,7 +340,9 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
         imageUrl: 'assets/certificate_template.png',
         status: CertificateStatus.issued,
         courseRating: widget.course.rating,
-        courseDurationHours: int.tryParse(widget.course.duration.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0,
+        courseDurationHours: int.tryParse(
+                widget.course.duration.replaceAll(RegExp(r'[^0-9]'), '')) ??
+            0,
         skills: ['Skill A', 'Skill B'],
       );
 
@@ -306,30 +363,106 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
       });
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        showCertificateDetailsSheet(context, certificate, studentName: studentName);
+        showCertificateDetailsSheet(context, certificate,
+            studentName: studentName);
       });
     }
   }
 }
 
-class YoutubeLessonPlayerScreen extends StatelessWidget {
+
+
+class YoutubeLessonPlayerScreen extends StatefulWidget {
   final String videoId;
 
-  const YoutubeLessonPlayerScreen({Key? key, required this.videoId}) : super(key: key);
+  const YoutubeLessonPlayerScreen({Key? key, required this.videoId})
+      : super(key: key);
+
+  @override
+  State<YoutubeLessonPlayerScreen> createState() =>
+      _YoutubeLessonPlayerScreenState();
+}
+
+class _YoutubeLessonPlayerScreenState extends State<YoutubeLessonPlayerScreen> {
+  late YoutubePlayerController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Start in portrait
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+
+    _controller = YoutubePlayerController(
+      params: const YoutubePlayerParams(
+        showControls: true,
+        showFullscreenButton: true,
+        enableJavaScript: true,
+        strictRelatedVideos: true,
+        playsInline: true,
+      ),
+    )..loadVideoById(videoId: widget.videoId);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Allow all orientations after frame render
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.close();
+
+    // Lock back to portrait
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+    super.dispose();
+  }
+
+  void _toggleFullScreen() {
+    // 🔁 Trigger fullscreen and force landscape
+    _controller.enterFullScreen();
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final controller = YoutubePlayerController(
-      initialVideoId: videoId,
-      flags: const YoutubePlayerFlags(autoPlay: true, mute: false),
-    );
-
-    return YoutubePlayerBuilder(
-      player: YoutubePlayer(controller: controller),
-      builder: (context, player) => Scaffold(
-        appBar: AppBar(title: const Text('Lesson Video')),
-        body: Center(child: player),
-      ),
+    return YoutubePlayerScaffold(
+      controller: _controller,
+      builder: (context, player) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Lesson Video', style: TextStyle(fontWeight: FontWeight.bold)),
+            backgroundColor: AppColors.darkBlue,
+            foregroundColor: AppColors.white,
+            centerTitle: true,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.fullscreen),
+                onPressed: _toggleFullScreen, // 👈 manual trigger
+              ),
+            ],
+          ),
+          body: AspectRatio(
+            aspectRatio: 16 / 9,
+            child: player,
+          ),
+        );
+      },
     );
   }
 }
+

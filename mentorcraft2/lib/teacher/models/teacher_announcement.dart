@@ -86,7 +86,6 @@ class TeacherAnnouncement {
     };
   }
 
-  /// Factory constructor for Firestore document data
   factory TeacherAnnouncement.fromMap(Map<String, dynamic> map, String id) {
     return TeacherAnnouncement(
       id: id,
@@ -112,7 +111,6 @@ class TeacherAnnouncement {
     );
   }
 
-  /// Factory constructor for JSON data (e.g., API or local JSON)
   factory TeacherAnnouncement.fromJson(Map<String, dynamic> json) {
     return TeacherAnnouncement(
       id: json['id'] ?? '',
@@ -153,11 +151,6 @@ class TeacherAnnouncement {
     };
   }
 }
-
-
-/// ------------------------
-/// Example usage for Firestore fetching TeacherAnnouncement:
-/// ------------------------
 
 TeacherAnnouncement fromFirestoreDoc(DocumentSnapshot doc) {
   final data = doc.data() as Map<String, dynamic>;

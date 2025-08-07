@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mentorcraft2/student/screens/forum_screen.dart';
+import 'package:mentorcraft2/student/screens/discussion_forum/forum_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mentorcraft2/teacher/provider/teacher_provider.dart';

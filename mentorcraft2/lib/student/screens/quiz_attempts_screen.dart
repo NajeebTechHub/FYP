@@ -84,7 +84,6 @@ class _QuizTakingScreenState extends State<QuizTakingScreen> {
     });
 
     try {
-      /// 🔄 Save submission in subcollection under the quiz
       await FirebaseFirestore.instance
           .collection('quizzes')
           .doc(widget.quiz.id)
@@ -99,7 +98,6 @@ class _QuizTakingScreenState extends State<QuizTakingScreen> {
         'selectedAnswers': answerDetails,
       });
 
-      /// 🔢 Increment total submissions
       await FirebaseFirestore.instance
           .collection('quizzes')
           .doc(widget.quiz.id)
@@ -149,7 +147,10 @@ class _QuizTakingScreenState extends State<QuizTakingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.quiz.title),
+        title: Text(widget.quiz.title,style: TextStyle(fontWeight: FontWeight.bold),),
+        backgroundColor: AppColors.darkBlue,
+        foregroundColor: AppColors.white,
+        centerTitle: true,
         actions: [
           Padding(padding: const EdgeInsets.all(16.0), child: _buildTimer())
         ],

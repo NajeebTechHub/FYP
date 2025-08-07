@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:mentorcraft2/teacher/provider/teacher_provider.dart' hide TeacherAnnouncement;
+import 'package:mentorcraft2/teacher/provider/teacher_provider.dart';
 import 'package:mentorcraft2/teacher/models/teacher_announcement.dart';
 import '../../../theme/color.dart';
 import 'package:mentorcraft2/teacher/widgets/announcement_card.dart';

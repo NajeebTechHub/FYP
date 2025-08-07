@@ -85,8 +85,10 @@ class _CertificatesScreenState extends State<CertificatesScreen>
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : Colors.white,
       appBar: AppBar(
-        title: const Text('My Certificates'),
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        title: const Text('My Certificates',style: TextStyle(fontWeight: FontWeight.bold),),
+        backgroundColor: AppColors.darkBlue,
+        foregroundColor: AppColors.white,
+        centerTitle: true,
         elevation: 0,
         actions: [
           IconButton(

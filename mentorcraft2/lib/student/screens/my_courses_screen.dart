@@ -72,7 +72,8 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> with SingleTickerProv
         createdAt: _parseDate(courseData['createdAt']),
         updatedAt: _parseDate(courseData['updatedAt']),
         duration: courseData['duration'] ?? '',
-        enrolledStudents: courseData['enrolledStudents'] ?? 0, modules: [],
+        enrolledStudents: courseData['enrolledStudents'] ?? 0,
+        modules: [],
       );
 
       final progress = (enrolledData['progress'] ?? 0.0).toDouble();
@@ -84,10 +85,13 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> with SingleTickerProv
           course: course,
           progress: progress,
           enrollmentDate: enrollmentDate,
-          lastAccessedDate: lastAccessedDate, completedLessonIds: [],
+          lastAccessedDate: lastAccessedDate,
+          completedLessonIds: [],
         ),
       );
     }
+
+    if (!mounted) return; // <- ✅ Prevent error after dispose
 
     setState(() {
       _enrolledCourses = loadedCourses;
@@ -107,7 +111,10 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> with SingleTickerProv
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CourseDetailsScreen(course: enrolledCourse.course),
+        builder: (context) => CourseDetailsScreen(
+          course: enrolledCourse.course,
+          isFromMyCourses: true,
+        ),
       ),
     );
     ScaffoldMessenger.of(context).showSnackBar(
@@ -155,7 +162,7 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> with SingleTickerProv
             const SizedBox(height: 32),
             ElevatedButton.icon(
               onPressed: () {
-                // Navigate to course catalog
+                // TODO: Navigate to course catalog
               },
               icon: const Icon(Icons.search),
               label: const Text('Browse Courses'),

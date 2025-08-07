@@ -43,7 +43,6 @@ class StudentProgress {
     if (value is List) {
       return value.whereType<Map<String, dynamic>>().toList();
     } else {
-      print('⚠️ $fieldName is not a List: ${value.runtimeType} → $value');
       return [];
     }
   }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../../../theme/color.dart';
+
 class AddDiscussionScreen extends StatefulWidget {
   const AddDiscussionScreen({Key? key}) : super(key: key);
 
@@ -59,7 +61,12 @@ class _AddDiscussionScreenState extends State<AddDiscussionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('New Discussion')),
+      appBar: AppBar(
+        title: const Text('New Discussion',style: TextStyle(fontWeight: FontWeight.bold),),
+        backgroundColor: AppColors.darkBlue,
+        foregroundColor: AppColors.white,
+        centerTitle: true,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(

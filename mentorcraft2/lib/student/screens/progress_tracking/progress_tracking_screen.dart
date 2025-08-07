@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:mentorcraft2/student/screens/progress_tracking/analytics_tab.dart';
 import 'package:mentorcraft2/student/screens/progress_tracking/certificate_tab.dart';
 import 'package:mentorcraft2/student/screens/progress_tracking/overview.dart';
-import '../models/course_progress.dart';
+import '../../models/course_progress.dart';
 import 'package:mentorcraft2/theme/color.dart';
 
 class ProgressTrackingScreen extends StatefulWidget {
@@ -106,11 +106,10 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> with Ti
       appBar: AppBar(
         title: Text(
           'Progress Tracker',
-          style: TextStyle(
-            color: theme.appBarTheme.titleTextStyle?.color ?? (isDark ? AppColors.textLight : Colors.black),
-          ),
-        ),
+          style: TextStyle(fontWeight: FontWeight.bold),),
         backgroundColor: AppColors.darkBlue,
+        foregroundColor: AppColors.white,
+        centerTitle: true,
         iconTheme: theme.iconTheme,
         bottom: TabBar(
           controller: _tabController,

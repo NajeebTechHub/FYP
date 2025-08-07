@@ -33,7 +33,7 @@ class CategoryPieChartSection extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             SizedBox(
-              height: 240,
+              height: 260, // Adjusted to fit scrollable legend
               child: Row(
                 children: [
                   Expanded(
@@ -76,18 +76,28 @@ class CategoryPieChartSection extends StatelessWidget {
     final categoryCount = <String, int>{};
 
     for (final course in data) {
-      final category = course.courseName.trim().isNotEmpty ? course.courseName.trim() : 'Uncategorized';
+      final category =
+      course.courseName.trim().isNotEmpty ? course.courseName.trim() : 'Uncategorized';
       categoryCount[category] = (categoryCount[category] ?? 0) + 1;
     }
 
+    final total = categoryCount.values.fold<int>(0, (sum, val) => sum + val);
+
     return categoryCount.entries.map((entry) {
       final category = entry.key;
+      final value = entry.value.toDouble();
+      final percent = ((value / total) * 100).toStringAsFixed(1);
       _categoryColorCache[category] ??= _generateColorFromString(category);
 
       return PieChartSectionData(
         color: _categoryColorCache[category],
-        value: entry.value.toDouble(),
-        title: '',
+        value: value,
+        title: '$percent%',
+        titleStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
         radius: 50,
       );
     }).toList();
@@ -98,50 +108,54 @@ class CategoryPieChartSection extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     for (final course in data) {
-      final category = course.courseName.trim().isNotEmpty ? course.courseName.trim() : 'Uncategorized';
+      final category =
+      course.courseName.trim().isNotEmpty ? course.courseName.trim() : 'Uncategorized';
       categoryCount[category] = (categoryCount[category] ?? 0) + 1;
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: categoryCount.entries.map((entry) {
-        final color = _categoryColorCache[entry.key] ?? _generateColorFromString(entry.key);
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: categoryCount.entries.map((entry) {
+          final color =
+              _categoryColorCache[entry.key] ?? _generateColorFromString(entry.key);
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            children: [
-              Container(
-                width: 14,
-                height: 14,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
+          return Padding(
+            padding: const EdgeInsets.only(left: 5,top: 8,bottom: 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  entry.key,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    entry.key,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                Text(
+                  entry.value.toString(),
                   style: TextStyle(
+                    fontWeight: FontWeight.bold,
                     fontSize: 14,
                     color: colorScheme.onSurface,
                   ),
                 ),
-              ),
-              Text(
-                entry.value.toString(),
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 }

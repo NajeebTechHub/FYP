@@ -40,7 +40,6 @@ class _StudentMainScreenState extends State<StudentMainScreen> with SingleTicker
     super.dispose();
   }
 
-  // Screen titles
   static const List<String> _screenTitles = [
     'Home',
     'Course Catalog',
@@ -48,7 +47,6 @@ class _StudentMainScreenState extends State<StudentMainScreen> with SingleTicker
     'Profile',
   ];
 
-  // Screen widgets
   final List<Widget> _screens = [
     const HomeScreen(),
     const CoursesScreen(),
@@ -61,7 +59,8 @@ class _StudentMainScreenState extends State<StudentMainScreen> with SingleTicker
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.darkBlue,
+        foregroundColor: AppColors.white,
         title: Text(_screenTitles[_selectedIndex],style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
         centerTitle: true,
         iconTheme: IconThemeData(color: Colors.white),
@@ -98,7 +97,6 @@ class _StudentMainScreenState extends State<StudentMainScreen> with SingleTicker
         currentIndex: _selectedIndex,
         isLoggedIn: _isLoggedIn,
       ),
-      // Listen to drawer open/close to animate the menu icon
       onDrawerChanged: (isOpened) {
         if (isOpened) {
           _drawerAnimController.forward();

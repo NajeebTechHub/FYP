@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mentorcraft2/theme/color.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import '../../student/screens/course_details_screen.dart';
 import '../models/teacher_course.dart';
 
 class CourseModulesScreen extends StatefulWidget {
@@ -94,8 +95,6 @@ class _CourseModulesScreenState extends State<CourseModulesScreen> {
     });
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -103,6 +102,7 @@ class _CourseModulesScreenState extends State<CourseModulesScreen> {
         title: Text(widget.course.title),
         backgroundColor: AppColors.darkBlue,
         foregroundColor: AppColors.white,
+        centerTitle: true,
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -204,6 +204,9 @@ class _CourseModulesScreenState extends State<CourseModulesScreen> {
   }
 
   Widget _buildLessonTile(Lesson lesson, CourseModule module) {
+    final isVideo = lesson.type == 'video' && lesson.videoUrl.isNotEmpty;
+    final videoId = YoutubePlayer.convertUrlToId(lesson.videoUrl ?? '');
+
     return ListTile(
       title: Text(
         '${lesson.order}. ${lesson.title}',
@@ -214,22 +217,45 @@ class _CourseModulesScreenState extends State<CourseModulesScreen> {
         children: [
           Text('Duration: ${lesson.duration} min • Type: ${lesson.type}'),
           const SizedBox(height: 8),
-          if (lesson.type == 'video' && lesson.videoUrl.isNotEmpty)
-            YoutubePlayer(
-              controller: YoutubePlayerController(
-                initialVideoId: YoutubePlayer.convertUrlToId(lesson.videoUrl) ?? '',
-                flags: const YoutubePlayerFlags(
-                  autoPlay: false,
-                  mute: false,
-                ),
+
+          if (isVideo && videoId != null && videoId.isNotEmpty)
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => YoutubeLessonPlayerScreen(videoId: videoId),
+                  ),
+                );
+              },
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.network(
+                      'https://img.youtube.com/vi/$videoId/0.jpg',
+                      width: double.infinity,
+                      height: 200,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const Icon(Icons.play_circle_fill, color: Colors.white, size: 64),
+                ],
               ),
-              showVideoProgressIndicator: true,
+            )
+          else if (isVideo)
+            const Text(
+              '⚠️ Invalid video link or ID. Please check the URL.',
+              style: TextStyle(color: Colors.redAccent),
             ),
+
           if (lesson.type == 'text')
             Text(
               lesson.content,
               style: const TextStyle(color: Colors.black87),
             ),
+
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -256,7 +282,6 @@ class _CourseModulesScreenState extends State<CourseModulesScreen> {
                     await modulesRef.doc(module.id).collection('lessons').doc(lesson.id).delete();
                   }
                 },
-
               ),
             ],
           ),
@@ -264,7 +289,6 @@ class _CourseModulesScreenState extends State<CourseModulesScreen> {
       ),
     );
   }
-
 
   void _showAddModuleSheet(BuildContext context) {
     final titleController = TextEditingController();
@@ -608,3 +632,4 @@ class _CourseModulesScreenState extends State<CourseModulesScreen> {
     super.dispose();
   }
 }
+

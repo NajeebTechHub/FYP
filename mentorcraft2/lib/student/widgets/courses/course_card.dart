@@ -33,6 +33,7 @@ class _CourseCardState extends State<CourseCard> {
         .doc(uid)
         .get();
 
+    if (!mounted) return;
     setState(() {
       isAlreadyEnrolled = doc.exists;
     });
@@ -132,7 +133,7 @@ class _CourseCardState extends State<CourseCard> {
                     ),
                     const SizedBox(height: 12),
                     ElevatedButton(
-                      onPressed: isAlreadyEnrolled ? null : _handleEnrollment,
+                      onPressed: _onEnrollPressed,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: isAlreadyEnrolled ? Colors.grey : AppColors.darkBlue,
                         minimumSize: const Size(double.infinity, 36),
@@ -164,6 +165,20 @@ class _CourseCardState extends State<CourseCard> {
     );
   }
 
+  void _onEnrollPressed() {
+    if (isAlreadyEnrolled) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You are already enrolled in this course.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } else {
+      _handleEnrollment();
+    }
+  }
+
   Future<void> _handleEnrollment() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -189,7 +204,11 @@ class _CourseCardState extends State<CourseCard> {
       });
 
       if (!mounted) return;
-      Navigator.pop(context);
+
+      setState(() {
+        isAlreadyEnrolled = true;
+      });
+
       showDialog(
         context: context,
         builder: (_) => const AlertDialog(
@@ -199,7 +218,6 @@ class _CourseCardState extends State<CourseCard> {
       );
     } catch (e) {
       if (!mounted) return;
-      Navigator.pop(context);
       showDialog(
         context: context,
         builder: (_) => AlertDialog(

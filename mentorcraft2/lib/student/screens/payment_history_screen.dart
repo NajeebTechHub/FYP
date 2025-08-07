@@ -43,7 +43,6 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
 
   void _applyFilters() {
     setState(() {
-      // First filter by search query
       if (_searchQuery.isEmpty) {
         _filteredPaymentHistory.clear();
         _filteredPaymentHistory.addAll(_paymentHistory);
@@ -56,12 +55,10 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
         }));
       }
 
-      // Then filter by status
       if (_statusFilter != null) {
         _filteredPaymentHistory.removeWhere((payment) => payment.status != _statusFilter);
       }
 
-      // Finally sort
       switch (_currentSortOption) {
         case SortOption.dateNewest:
           _filteredPaymentHistory.sort((a, b) => b.dateTime.compareTo(a.dateTime));
@@ -77,7 +74,6 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
           break;
       }
 
-      // Reset current page when filters change
       _currentPage = 1;
     });
   }
@@ -102,8 +98,12 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(title: 'Payment History'),
-      // drawer: const AppDrawer(),
+      appBar: AppBar(
+        title: Text('Payment History',style: TextStyle(fontWeight: FontWeight.bold),),
+        backgroundColor: AppColors.darkBlue,
+        foregroundColor: AppColors.white,
+        centerTitle: true,
+      ),
       body: Column(
         children: [
           _buildFilterSection(),
